@@ -57,17 +57,25 @@ async function loadLiveData(userEmail) {
       fetchMyJiraTickets(userEmail),
     ]);
 
-    const emails      = rawEmails.status      === 'fulfilled' ? normalizeEmails(rawEmails.value)       : [];
-    const events      = rawEvents.status      === 'fulfilled' ? normalizeEvents(rawEvents.value)       : [];
-    const weekEvents  = rawWeekEvents.status  === 'fulfilled' ? normalizeEvents(rawWeekEvents.value)   : [];
-    const tickets     = rawTickets.status     === 'fulfilled' ? normalizeJira(rawTickets.value)        : [];
+    const emails     = rawEmails.status     === 'fulfilled' ? normalizeEmails(rawEmails.value)     : [];
+    const events     = rawEvents.status     === 'fulfilled' ? normalizeEvents(rawEvents.value)     : [];
+    const weekEvents = rawWeekEvents.status === 'fulfilled' ? normalizeEvents(rawWeekEvents.value) : [];
 
-    if (rawEmails.status     === 'rejected') console.warn('Emails:', rawEmails.reason);
-    if (rawEvents.status     === 'rejected') console.warn('Calendar:', rawEvents.reason);
-    if (rawWeekEvents.status === 'rejected') console.warn('Week calendar:', rawWeekEvents.reason);
-    if (rawTickets.status    === 'rejected') console.warn('Jira:', rawTickets.reason);
+    // Jira returns { issues, queryUser, authEmail, error }
+    let tickets = [], jiraQueryUser = userEmail, jiraError = null;
+    if (rawTickets.status === 'fulfilled') {
+      const jiraResult = rawTickets.value;
+      tickets       = normalizeJira(jiraResult.issues  || []);
+      jiraQueryUser = jiraResult.queryUser || userEmail;
+      jiraError     = jiraResult.error     || null;
+    }
 
-    renderTasks(tickets);
+    if (rawEmails.status     === 'rejected') console.warn('Emails:',         rawEmails.reason);
+    if (rawEvents.status     === 'rejected') console.warn('Calendar:',       rawEvents.reason);
+    if (rawWeekEvents.status === 'rejected') console.warn('Week calendar:',  rawWeekEvents.reason);
+    if (rawTickets.status    === 'rejected') console.warn('Jira:',           rawTickets.reason);
+
+    renderTasks(tickets, jiraQueryUser, jiraError);
     renderCalendar(events);
     renderEmails(emails);
     renderWeeklySchedule(weekEvents);
@@ -121,9 +129,30 @@ async function loadAiSummary(tasks, emails) {
 
 // ─── Render — Tasks ──────────────────────────────────────────────
 
-function renderTasks(tasks) {
-  _allTasks = tasks;
+let _jiraQueryUser = '';
+let _jiraError     = null;
+
+function renderTasks(tasks, queryUser, error) {
+  _allTasks      = tasks;
+  _jiraQueryUser = queryUser || '';
+  _jiraError     = error     || null;
   _applyTaskFilter();
+  _renderJiraUserBadge();
+}
+
+function _renderJiraUserBadge() {
+  const badge = document.getElementById('jiraUserBadge');
+  if (!badge) return;
+  if (_jiraError) {
+    badge.innerHTML = `<span class="jira-user-badge jira-user-error" title="${escHtml(_jiraError)}">⚠ Jira error</span>`;
+  } else if (_jiraQueryUser) {
+    badge.innerHTML = `<span class="jira-user-badge" title="Fetching tickets assigned to ${escHtml(_jiraQueryUser)}">
+      <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M8 1a4 4 0 1 1 0 8A4 4 0 0 1 8 1zm0 9c-4.42 0-7 2.24-7 3.5V15h14v-1.5C15 12.24 12.42 10 8 10z" fill="currentColor"/></svg>
+      ${escHtml(_jiraQueryUser)}
+    </span>`;
+  } else {
+    badge.innerHTML = '';
+  }
 }
 
 function _applyTaskFilter() {
@@ -152,6 +181,11 @@ function _applyTaskFilter() {
     const likelihood = calcCompletionLikelihood(t);
     const lkClass    = likelihood >= 70 ? 'lk-high' : likelihood >= 40 ? 'lk-mid' : 'lk-low';
 
+    const assigneeInitial = t.assigneeName ? t.assigneeName.charAt(0).toUpperCase() : '?';
+    const assigneeTitle   = t.assigneeName
+      ? `${t.assigneeName} (${t.assigneeEmail})`
+      : 'Unassigned';
+
     return `
     <div class="task-item" onclick="window.open('${t.url}','_blank')">
       <div class="priority-flag priority-${t.priority}"></div>
@@ -162,6 +196,7 @@ function _applyTaskFilter() {
         <div class="task-meta">
           <span class="task-status status-${t.status}">${t.statusLabel}</span>
           ${dueLabel ? `<span class="${dueClass}">${dueLabel}</span>` : ''}
+          <span class="task-assignee" title="${escHtml(assigneeTitle)}">${escHtml(assigneeInitial)}</span>
           <span class="task-likelihood ${lkClass}" title="Likelihood of completing today">
             <span class="lk-bar"><span class="lk-fill" style="width:${likelihood}%"></span></span>
             <span class="lk-pct">${likelihood}%</span>
