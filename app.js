@@ -99,13 +99,23 @@ async function loadAiSummary(tasks, emails) {
   });
   if (!res.ok) return;
   const ai = await res.json();
+
   if (ai.summary) {
     document.getElementById('aiSummary').textContent = ai.summary;
+  }
+  if (ai.focusOrder?.length) {
+    const el = document.getElementById('aiFocusItems');
+    el.classList.remove('hidden');
+    el.innerHTML = ai.focusOrder.map(item =>
+      `<span class="ai-focus-chip">↑ ${escHtml(String(item))}</span>`
+    ).join('');
   }
   if (ai.blockers?.length) {
     const el = document.getElementById('aiBlockers');
     el.classList.remove('hidden');
-    el.textContent = '⚠ ' + ai.blockers[0];
+    el.innerHTML = ai.blockers.map(b =>
+      `<span class="ai-blocker-chip">⚠ ${escHtml(String(b))}</span>`
+    ).join('');
   }
 }
 
@@ -182,15 +192,17 @@ function renderCalendar(events) {
   }
 
   list.innerHTML = events.map(e => {
-    const time = `${fmt12(e.start)} – ${fmt12(e.end)}`;
+    const time    = `${fmt12(e.start)} – ${fmt12(e.end)}`;
+    const openUrl = e.joinUrl || 'https://outlook.office.com/calendar/view/day';
     return `
-    <div class="event-item ${e.isNow ? 'event-now' : ''}" ${e.joinUrl ? `onclick="window.open('${e.joinUrl}','_blank')"` : ''}>
+    <div class="event-item ${e.isNow ? 'event-now' : ''}" onclick="window.open('${openUrl}','_blank')">
       <div class="event-bar"></div>
-      <div>
+      <div class="event-content">
         <div class="event-time">${time}</div>
         <div class="event-subject">${escHtml(e.subject)}</div>
         ${e.location ? `<div class="event-location">${escHtml(e.location)}</div>` : ''}
       </div>
+      ${e.joinUrl ? '<div class="event-join">Join</div>' : ''}
     </div>`;
   }).join('');
 }
@@ -210,8 +222,9 @@ function renderEmails(emails) {
     const color   = AVATAR_COLORS[i % AVATAR_COLORS.length];
     const initial = e.from.charAt(0).toUpperCase();
     const date    = formatDate(e.date);
+    const url     = e.webLink || 'https://outlook.office.com/mail/';
     return `
-    <div class="email-item">
+    <div class="email-item" onclick="window.open('${url}','_blank')">
       <div class="email-avatar" style="background:${color}">${initial}</div>
       <div class="email-body">
         <div class="email-row1">

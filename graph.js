@@ -7,7 +7,7 @@ async function fetchEmails(accessToken) {
     `?$filter=isRead eq false` +
     `&$top=10` +
     `&$orderby=receivedDateTime desc` +
-    `&$select=subject,from,receivedDateTime,bodyPreview`;
+    `&$select=subject,from,receivedDateTime,bodyPreview,webLink`;
 
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -77,6 +77,7 @@ function normalizeEmails(rawEmails) {
     address:  e.from?.emailAddress?.address || '',
     date:     new Date(e.receivedDateTime),
     preview:  e.bodyPreview || '',
+    webLink:  e.webLink || 'https://outlook.office.com/mail/',
   }));
 }
 

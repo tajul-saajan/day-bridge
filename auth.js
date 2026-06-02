@@ -49,8 +49,15 @@ async function handleLogin() {
 }
 
 async function handleLogout() {
-  const instance = getMsalInstance();
-  await instance.logoutPopup({ account: currentAccount });
+  try {
+    const instance = getMsalInstance();
+    await instance.logoutPopup({
+      account:            currentAccount,
+      postLogoutRedirectUri: window.location.origin,
+    });
+  } catch (err) {
+    console.warn('Logout:', err);
+  }
   currentAccount = null;
   onLogoutSuccess();
 }
