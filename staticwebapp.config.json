@@ -12,7 +12,7 @@
   "globalHeaders": {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "SAMEORIGIN",
-    "Content-Security-Policy": "default-src 'self'; script-src 'self' https://alcdn.msauth.net; connect-src 'self' https://login.microsoftonline.com https://graph.microsoft.com https://*.atlassian.net"
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' https://alcdn.msauth.net 'unsafe-eval'; connect-src 'self' https://login.microsoftonline.com https://*.login.microsoftonline.com https://login.microsoft.com https://graph.microsoft.com https://*.atlassian.net; frame-src https://login.microsoftonline.com https://*.login.microsoftonline.com; img-src 'self' data: https://graph.microsoft.com; style-src 'self' 'unsafe-inline'"
   },
   "mimeTypes": {
     ".json": "application/json"
