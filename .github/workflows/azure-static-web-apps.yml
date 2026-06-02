@@ -1,4 +1,4 @@
-name: Deploy to Azure Static Web Apps
+name: Deploy DayBridge to Azure Static Web Apps
 
 on:
   push:
@@ -32,11 +32,11 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_SWA_DEPLOY_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: upload
-          app_location: /
-          api_location: api
+          action: "upload"
+          app_location: "/"
+          api_location: "api"        # ← change from "" to "api"
           output_location: ""
-          skip_app_build: true
+          skip_app_build: true       # ← add this line
 
   close_pull_request:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
