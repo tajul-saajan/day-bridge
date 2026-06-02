@@ -1,0 +1,12 @@
+{
+  "name": "command-center",
+  "version": "1.0.0",
+  "description": "WSD Command Center — Jira, Microsoft Graph, AAD SSO dashboard",
+  "scripts": {
+    "start": "npx http-server . -p 3000 -c-1 --cors",
+    "install:api": "cd api/summarize && npm install"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
