@@ -3,7 +3,7 @@
 .env.local
 .env.*.local
 
-# Dependencies
+# Dependencies — exclude node_modules but keep lock files
 node_modules/
 api/summarize/node_modules/
 
