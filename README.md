@@ -1,4 +1,4 @@
-# Command Center
+# DayBridge
 
 > A unified productivity dashboard for WSD engineers — bringing together Jira tickets, Microsoft 365 calendar, and unread emails in one place, with AI-powered daily briefings and smart completion tracking.
 
@@ -9,9 +9,9 @@
 
 ---
 
-## What is Command Center?
+## What is DayBridge?
 
-Command Center is an internal productivity tool built for the WSD team. Instead of switching between Jira, Outlook, and your calendar all day, Command Center pulls everything into a single clean dashboard and tells you — with the help of Claude AI — what to focus on right now.
+DayBridge is an internal productivity tool built for the WSD team. Instead of switching between Jira, Outlook, and your calendar all day, DayBridge pulls everything into a single clean dashboard and tells you — with the help of Claude AI — what to focus on right now.
 
 Open it in the morning, sign in with your Microsoft account, and within seconds you have:
 - Every Jira ticket assigned to you, sorted by urgency
@@ -45,7 +45,7 @@ No configuration required for a first look — the app loads with realistic demo
 │  🟡 WSD-99   To Do        ▓░░░░ 25%│                                     │
 ├───────────────────────────────────┴─────────────────────────────────────┤
 │  ● UNREAD EMAILS                                                        │
-│  SC  Sarah Chen       Re: Command Center demo — Thursday confirmed   6m │
+│  SC  Sarah Chen       Re: DayBridge demo — Thursday confirmed   6m │
 │  JA  Jira Automation  [WSD-112] Critical bug escalated              18m │
 │  AD  Azure DevOps     Pipeline cmd-center-main — Build #158 ✓       35m │
 └─────────────────────────────────────────────────────────────────────────┘

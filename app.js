@@ -1,4 +1,4 @@
-// ─── Command Center — Main Application ───────────────────────────
+// ─── DayBridge — Main Application ────────────────────────────────
 
 // Avatar colours cycle through these for email senders
 const AVATAR_COLORS = ['#0078D4','#0052CC','#7B61FF','#0e7a3c','#c25000','#d92b3a','#6b7a90'];

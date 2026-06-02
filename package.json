@@ -1,7 +1,7 @@
 {
-  "name": "command-center",
+  "name": "daybridge",
   "version": "1.0.0",
-  "description": "WSD Command Center — Jira, Microsoft Graph, AAD SSO dashboard",
+  "description": "DayBridge — WSD productivity dashboard with Jira, Microsoft Graph, and AI daily briefings",
   "scripts": {
     "start": "npx http-server . -p 3000 -c-1 --cors",
     "install:api": "cd api/summarize && npm install"

@@ -30,16 +30,11 @@ jobs:
         run: npm ci
         working-directory: api/summarize
 
-      - name: Install OIDC client
-        run: npm install @actions/core@1.6.0 @actions/http-client
-
       - name: Get GitHub OIDC token
         uses: actions/github-script@v6
         id: idtoken
         with:
-          script: |
-            const core = require('@actions/core')
-            return await core.getIDToken()
+          script: return await core.getIDToken()
           result-encoding: string
 
       - name: Deploy to Azure Static Web Apps
