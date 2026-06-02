@@ -1,32 +1,9 @@
-// Jira REST API helpers
-// In production: route calls through an Azure Function proxy — never expose JIRA_AUTH in browser.
+// Jira REST API helpers — proxied through Azure Function to keep token server-side
 
-const JIRA_CONFIG = {
-  baseUrl: 'https://wallstreetdocs.atlassian.net',
-  email:   'kobir.hosan@wsd.com',
-  token:   window.ENV?.JIRA_TOKEN || '',
-};
-
-function getJiraAuth() {
-  return btoa(`${JIRA_CONFIG.email}:${JIRA_CONFIG.token}`);
-}
-
-async function fetchMyJiraTickets() {
-  const jql = encodeURIComponent(
-    'assignee = currentUser() AND statusCategory != Done ORDER BY priority ASC, due ASC'
-  );
-  const fields = 'summary,priority,status,duedate,issuetype,assignee';
-
-  const res = await fetch(
-    `${JIRA_CONFIG.baseUrl}/rest/api/3/search?jql=${jql}&fields=${fields}&maxResults=20`,
-    {
-      headers: {
-        Authorization: `Basic ${getJiraAuth()}`,
-        Accept:        'application/json',
-      },
-    }
-  );
-  if (!res.ok) throw new Error(`Jira API: ${res.status} ${res.statusText}`);
+async function fetchMyJiraTickets(userEmail) {
+  const params = userEmail ? `?user=${encodeURIComponent(userEmail)}` : '';
+  const res = await fetch(`/api/jira-tickets${params}`);
+  if (!res.ok) throw new Error(`Jira proxy: ${res.status} ${res.statusText}`);
   const data = await res.json();
   return data.issues || [];
 }

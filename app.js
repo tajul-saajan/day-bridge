@@ -25,13 +25,14 @@ function setDateDisplay() {
 // ─── Auth Callbacks (called by auth.js) ─────────────────────────
 
 function onLoginSuccess(response) {
-  const name = response.account?.name || response.account?.username || 'User';
+  const name  = response.account?.name     || response.account?.username || 'User';
+  const email = response.account?.username || '';
   document.getElementById('loginBtn').classList.add('hidden');
   document.getElementById('userInfo').classList.remove('hidden');
   document.getElementById('userName').textContent = name;
   document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
   document.getElementById('statusBar').classList.remove('hidden');
-  loadLiveData();
+  loadLiveData(email);
 }
 
 function onLogoutSuccess() {
@@ -43,7 +44,7 @@ function onLogoutSuccess() {
 
 // ─── Live Data ───────────────────────────────────────────────────
 
-async function loadLiveData() {
+async function loadLiveData(userEmail) {
   showLoading('Fetching your data…');
   try {
     const token = await getAccessToken();
@@ -52,7 +53,7 @@ async function loadLiveData() {
     const [rawEmails, rawEvents, rawTickets] = await Promise.allSettled([
       fetchEmails(token),
       fetchCalendarEvents(token),
-      fetchMyJiraTickets(),
+      fetchMyJiraTickets(userEmail),
     ]);
 
     const emails  = rawEmails.status  === 'fulfilled' ? normalizeEmails(rawEmails.value)   : [];
