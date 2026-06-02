@@ -50,23 +50,27 @@ async function loadLiveData(userEmail) {
     const token = await getAccessToken();
 
     updateLoadingText('Loading emails, calendar, and tasks…');
-    const [rawEmails, rawEvents, rawTickets] = await Promise.allSettled([
+    const [rawEmails, rawEvents, rawWeekEvents, rawTickets] = await Promise.allSettled([
       fetchEmails(token),
       fetchCalendarEvents(token),
+      fetchWeekCalendarEvents(token),
       fetchMyJiraTickets(userEmail),
     ]);
 
-    const emails  = rawEmails.status  === 'fulfilled' ? normalizeEmails(rawEmails.value)   : [];
-    const events  = rawEvents.status  === 'fulfilled' ? normalizeEvents(rawEvents.value)   : [];
-    const tickets = rawTickets.status === 'fulfilled' ? normalizeJira(rawTickets.value)    : [];
+    const emails      = rawEmails.status      === 'fulfilled' ? normalizeEmails(rawEmails.value)       : [];
+    const events      = rawEvents.status      === 'fulfilled' ? normalizeEvents(rawEvents.value)       : [];
+    const weekEvents  = rawWeekEvents.status  === 'fulfilled' ? normalizeEvents(rawWeekEvents.value)   : [];
+    const tickets     = rawTickets.status     === 'fulfilled' ? normalizeJira(rawTickets.value)        : [];
 
-    if (rawEmails.status  === 'rejected') console.warn('Emails:', rawEmails.reason);
-    if (rawEvents.status  === 'rejected') console.warn('Calendar:', rawEvents.reason);
-    if (rawTickets.status === 'rejected') console.warn('Jira:', rawTickets.reason);
+    if (rawEmails.status     === 'rejected') console.warn('Emails:', rawEmails.reason);
+    if (rawEvents.status     === 'rejected') console.warn('Calendar:', rawEvents.reason);
+    if (rawWeekEvents.status === 'rejected') console.warn('Week calendar:', rawWeekEvents.reason);
+    if (rawTickets.status    === 'rejected') console.warn('Jira:', rawTickets.reason);
 
     renderTasks(tickets);
     renderCalendar(events);
     renderEmails(emails);
+    renderWeeklySchedule(weekEvents);
     updateStats(tickets, events.length, emails.length);
     updateProductivityMeter(tickets, events.length);
 
@@ -101,7 +105,7 @@ async function loadAiSummary(tasks, emails) {
   if (ai.blockers?.length) {
     const el = document.getElementById('aiBlockers');
     el.classList.remove('hidden');
-    el.textContent = '⚠ Blockers: ' + ai.blockers.join(' · ');
+    el.textContent = '⚠ ' + ai.blockers[0];
   }
 }
 
@@ -221,39 +225,69 @@ function renderEmails(emails) {
   }).join('');
 }
 
-// ─── Mock Data (demo without sign-in) ────────────────────────────
+// ─── Render — Weekly Schedule ────────────────────────────────────
+
+function renderWeeklySchedule(allEvents) {
+  const el = document.getElementById('weeklyList');
+  if (!el) return;
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const day   = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+
+  const eventsByDay = {};
+  allEvents.forEach(e => {
+    const key = new Date(e.start).toDateString();
+    if (!eventsByDay[key]) eventsByDay[key] = [];
+    eventsByDay[key].push(e);
+  });
+
+  const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  el.innerHTML = dayNames.map((name, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const key     = d.toDateString();
+    const dayEvts = eventsByDay[key] || [];
+    const count   = dayEvts.length;
+    const isToday = d.toDateString() === today.toDateString();
+    const isPast  = d < today && !isToday;
+    const hasNow  = dayEvts.some(e => e.isNow);
+
+    const dots = count > 0
+      ? Array.from({ length: Math.min(count, 3) }, (_, di) =>
+          `<span class="week-dot${di === 0 && hasNow ? ' week-dot-now' : ''}"></span>`
+        ).join('')
+      : '';
+
+    return `
+    <div class="week-day${isToday ? ' week-day-today' : ''}${isPast ? ' week-day-past' : ''}">
+      <span class="week-day-name">${name}</span>
+      <span class="week-day-num">${d.getDate()}</span>
+      <div class="week-dots">${dots}</div>
+      ${count > 0 ? `<span class="week-count">${count}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ─── Empty state before sign-in ──────────────────────────────────
 
 function renderMockData() {
-  const mockTasks = [
-    { key:'WSD-101', summary:'Implement SSO login with MSAL',  priority:'high',    status:'inprogress', statusLabel:'In Progress', issueType:'story', due: daysFromNow(1),  overdue: false, url:'#' },
-    { key:'WSD-98',  summary:'Fix calendar sync timezone bug', priority:'highest', status:'inprogress', statusLabel:'In Progress', issueType:'bug',   due: daysFromNow(-1), overdue: true,  url:'#' },
-    { key:'WSD-95',  summary:'Write API integration tests',    priority:'medium',  status:'todo',       statusLabel:'To Do',       issueType:'task',  due: daysFromNow(3),  overdue: false, url:'#' },
-    { key:'WSD-90',  summary:'Dashboard performance review',   priority:'low',     status:'review',     statusLabel:'In Review',   issueType:'task',  due: daysFromNow(5),  overdue: false, url:'#' },
-  ];
+  renderTasks([]);
+  renderCalendar([]);
+  renderEmails([]);
+  renderWeeklySchedule([]);
+  updateStats([], 0, 0);
 
-  const base = new Date(); base.setMinutes(0,0,0);
-  const mockEvents = [
-    { subject:'Daily Standup',          start: hrs(base,9),  end: hrs(base,9,15),  location:'Teams',         isNow: isNow(hrs(base,9),  hrs(base,9,15)),  joinUrl: null },
-    { subject:'Product Roadmap Review', start: hrs(base,11), end: hrs(base,12),    location:'Conf Room B',    isNow: isNow(hrs(base,11), hrs(base,12)),    joinUrl: null },
-    { subject:'1-on-1 with Manager',    start: hrs(base,14), end: hrs(base,14,30), location:'Online meeting', isNow: isNow(hrs(base,14), hrs(base,14,30)), joinUrl: '#'  },
-    { subject:'Sprint Planning',        start: hrs(base,15), end: hrs(base,16,30), location:'Main boardroom', isNow: isNow(hrs(base,15), hrs(base,16,30)), joinUrl: null },
-  ];
-
-  renderTasks(mockTasks);
-  renderCalendar(mockEvents);
-  renderEmails([
-    { from:'Sarah Chen',      subject:'Re: Q3 Dashboard Timeline',            date: minsAgo(12),  preview:'Looks good! Can we move the demo to Thursday instead?' },
-    { from:'Jira Automation', subject:'[WSD-98] Bug assigned to you',         date: minsAgo(34),  preview:'A new bug has been assigned: Fix calendar sync timezone bug' },
-    { from:'Azure DevOps',    subject:'Build #142 failed — main branch',      date: minsAgo(55),  preview:'The build failed at step: npm test. View details…' },
-    { from:'David Park',      subject:'API credentials for staging env',      date: minsAgo(80),  preview:'Hi, I have sent the updated .env values to your Teams DM' },
-    { from:'HR Team',         subject:'New policy update — remote work 2026', date: minsAgo(210), preview:'Please review and acknowledge the updated remote work guidelines' },
-  ]);
-
-  updateStats(mockTasks, mockEvents.length, 5);
-  updateProductivityMeter(mockTasks, mockEvents.length);
+  const fill = document.getElementById('psFill');
+  if (fill) { fill.style.width = '0%'; fill.style.background = '#e1e6ed'; }
+  const pct    = document.getElementById('psPct');    if (pct)    pct.textContent    = '—';
+  const status = document.getElementById('psStatus'); if (status) { status.textContent = 'Sign in to calculate'; status.style.color = ''; }
+  const chips  = document.getElementById('psChips');  if (chips)  chips.innerHTML    = '';
 
   document.getElementById('aiSummary').textContent =
-    'Demo mode — sign in with Microsoft to load your live tasks, calendar events, and unread emails with AI prioritization.';
+    'Sign in with Microsoft to get your AI-powered daily briefing — tasks, emails and calendar events prioritised for you.';
 }
 
 // ─── Loading helpers ─────────────────────────────────────────────

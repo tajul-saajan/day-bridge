@@ -17,6 +17,30 @@ async function fetchEmails(accessToken) {
   return data.value || [];
 }
 
+async function fetchWeekCalendarEvents(accessToken) {
+  const now    = new Date();
+  const day    = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+  monday.setHours(0, 0, 0, 0);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+
+  const url = `${GRAPH}/me/calendarView` +
+    `?startDateTime=${monday.toISOString()}` +
+    `&endDateTime=${sunday.toISOString()}` +
+    `&$select=subject,start,end,location,isOnlineMeeting,onlineMeetingUrl` +
+    `&$orderby=start/dateTime asc&$top=50`;
+
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}`, Prefer: 'outlook.timezone="UTC"' },
+  });
+  if (!res.ok) throw new Error(`Graph week calendar: ${res.status}`);
+  const data = await res.json();
+  return data.value || [];
+}
+
 async function fetchCalendarEvents(accessToken) {
   const now   = new Date();
   const start = new Date(now); start.setHours(0, 0, 0, 0);

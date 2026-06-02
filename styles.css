@@ -95,29 +95,34 @@ body {
 /* ─── Main ────────────────────────────────────────────────────── */
 .main { padding: 24px; max-width: 1400px; margin: 0 auto; }
 
-/* ─── AI Banner ──────────────────────────────────────────────── */
-.ai-banner {
+/* ─── AI Summary Strip ───────────────────────────────────────── */
+.ai-strip {
   background: var(--surface);
   border: 1px solid #d8d0ff;
   border-radius: var(--radius);
-  padding: 16px 20px;
-  display: flex; align-items: flex-start; gap: 14px;
-  margin-bottom: 20px;
+  padding: 10px 16px;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 12px;
   box-shadow: var(--shadow-sm);
+  min-height: 0;
 }
-.ai-banner-icon {
-  width: 36px; height: 36px; flex-shrink: 0;
-  background: var(--purple-light);
-  border-radius: 8px;
+.ai-strip-icon {
+  width: 28px; height: 28px; flex-shrink: 0;
+  background: var(--purple-light); border-radius: 6px;
   display: flex; align-items: center; justify-content: center;
 }
-.ai-content { flex: 1; }
-.ai-label { font-size: 11px; font-weight: 600; color: var(--purple); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
-.ai-text { font-size: 14px; color: var(--text-primary); line-height: 1.6; }
-.ai-blockers {
-  background: var(--red-light);
-  border-radius: 6px; padding: 8px 12px;
-  font-size: 12px; color: var(--red); margin-top: 8px;
+.ai-strip-label {
+  font-size: 11px; font-weight: 700; color: var(--purple);
+  text-transform: uppercase; letter-spacing: .5px; white-space: nowrap;
+}
+.ai-strip-text {
+  flex: 1; font-size: 13px; color: var(--text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ai-strip-blockers {
+  background: var(--red-light); border-radius: 4px;
+  padding: 3px 10px; font-size: 12px; color: var(--red);
+  white-space: nowrap; flex-shrink: 0;
 }
 
 /* ─── Stats Bar ─────────────────────────────────────────────── */
@@ -214,11 +219,12 @@ body {
 /* ─── Dashboard Grid ──────────────────────────────────────────── */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: auto auto;
+  grid-template-columns: 1.8fr 1fr 1fr;
   gap: 20px;
+  align-items: start;
 }
-.card-wide { grid-column: 1 / -1; }
+.schedule-col { display: flex; flex-direction: column; gap: 20px; }
+.email-panel  { height: 100%; }
 
 /* ─── Card ────────────────────────────────────────────────────── */
 .card {
@@ -356,6 +362,29 @@ body {
 .email-subject { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .email-preview { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
 
+/* ─── Weekly Schedule ─────────────────────────────────────────── */
+.weekly-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  padding: 12px 10px;
+}
+.week-day {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 8px 2px; border-radius: 8px; gap: 4px;
+  transition: background var(--transition);
+}
+.week-day:hover { background: var(--bg); }
+.week-day-today { background: var(--blue-light) !important; }
+.week-day-past  { opacity: .5; }
+.week-day-name  { font-size: 9px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+.week-day-num   { font-size: 15px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+.week-day-today .week-day-num { color: var(--blue); }
+.week-dots      { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; min-height: 8px; }
+.week-dot       { width: 5px; height: 5px; border-radius: 50%; background: var(--blue); }
+.week-dot-now   { background: var(--green); }
+.week-count     { font-size: 10px; color: var(--text-secondary); font-weight: 500; }
+
 /* ─── Loading ──────────────────────────────────────────────────── */
 .loading-overlay {
   position: fixed; inset: 0; background: rgba(255,255,255,.85);
@@ -375,12 +404,18 @@ body {
 .hidden { display: none !important; }
 
 /* ─── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .dashboard-grid { grid-template-columns: 1.4fr 1fr; }
+  .email-panel    { grid-column: 1 / -1; }
+}
 @media (max-width: 900px) {
   .dashboard-grid { grid-template-columns: 1fr; }
-  .card-wide { grid-column: 1; }
+  .schedule-col, .email-panel { grid-column: 1; }
   .main { padding: 16px; }
   .stat-label { display: none; }
-  .stat-card { padding: 12px 14px; gap: 10px; }
+  .stat-card  { padding: 12px 14px; gap: 10px; }
+  .weekly-grid { grid-template-columns: repeat(7, 1fr); }
+  .ai-strip-text { display: none; }
 }
 @media (max-width: 700px) {
   .stats-bar { flex-wrap: wrap; }
