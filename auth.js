@@ -2,9 +2,9 @@
 // Replace CLIENT_ID and TENANT_ID with values from your AAD App Registration
 
 const AUTH_CONFIG = {
-  clientId:   window.ENV?.CLIENT_ID   || 'YOUR_CLIENT_ID',
-  tenantId:   window.ENV?.TENANT_ID   || 'YOUR_TENANT_ID',
-  redirectUri: window.location.origin,
+  clientId:    '50575903-5945-4162-b6ad-8d9ad175034d',
+  tenantId:    'a3be1280-7a3a-4edc-b258-0d6a539beee9',
+  redirectUri:  window.location.origin,
 };
 
 const msalConfig = {

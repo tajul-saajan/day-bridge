@@ -2,9 +2,9 @@
 // In production: route calls through an Azure Function proxy — never expose JIRA_AUTH in browser.
 
 const JIRA_CONFIG = {
-  baseUrl: window.ENV?.JIRA_BASE_URL || 'https://yourcompany.atlassian.net',
-  email:   window.ENV?.JIRA_EMAIL    || '',
-  token:   window.ENV?.JIRA_TOKEN    || '',
+  baseUrl: 'https://wallstreetdocs.atlassian.net',
+  email:   'kobir.hosan@wsd.com',
+  token:   window.ENV?.JIRA_TOKEN || '',
 };
 
 function getJiraAuth() {
