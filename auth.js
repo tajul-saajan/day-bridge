@@ -1,10 +1,9 @@
-// MSAL Authentication — requires @azure/msal-browser loaded via CDN or bundler
-// Replace CLIENT_ID and TENANT_ID with values from your AAD App Registration
+// MSAL Authentication — Microsoft identity platform
 
 const AUTH_CONFIG = {
-  clientId:    '50575903-5945-4162-b6ad-8d9ad175034d',
-  tenantId:    'a3be1280-7a3a-4edc-b258-0d6a539beee9',
-  redirectUri:  window.location.origin,
+  clientId:   '50575903-5945-4162-b6ad-8d9ad175034d',
+  tenantId:   'a3be1280-7a3a-4edc-b258-0d6a539beee9',
+  redirectUri: window.location.origin,
 };
 
 const msalConfig = {
@@ -14,15 +13,19 @@ const msalConfig = {
     redirectUri: AUTH_CONFIG.redirectUri,
   },
   cache: {
-    cacheLocation:      'sessionStorage',
-    storeAuthStateInCookie: false,
+    cacheLocation:           'sessionStorage',
+    storeAuthStateInCookie:  false,
+  },
+  system: {
+    allowNativeBroker: false,   // prevents broker interference causing first-attempt failure
   },
 };
 
 const LOGIN_SCOPES = ['User.Read', 'Mail.Read', 'Calendars.Read'];
 
-let msalInstance = null;
+let msalInstance   = null;
 let currentAccount = null;
+let _authReady     = null;   // promise that resolves when initAuth completes
 
 function getMsalInstance() {
   if (!msalInstance) {
@@ -38,27 +41,34 @@ async function handleLogin() {
   try {
     showLoading('Signing in…');
     const instance = getMsalInstance();
+
+    // Wait for any in-progress interaction from page-load initAuth to settle
+    if (_authReady) await _authReady.catch(() => {});
+
     const response = await instance.loginPopup({ scopes: LOGIN_SCOPES });
     currentAccount = response.account;
     onLoginSuccess(response);
   } catch (err) {
-    console.error('Login failed:', err);
     hideLoading();
+    // Silently ignore user closing the popup
+    if (err.errorCode === 'user_cancelled') return;
+    console.error('Login failed:', err);
     alert(`Sign-in failed: ${err.message}`);
   }
 }
 
-async function handleLogout() {
+function handleLogout() {
+  // Local-only logout — clears MSAL session cache without any popup or redirect
   try {
-    const instance = getMsalInstance();
-    await instance.logoutPopup({
-      account:            currentAccount,
-      postLogoutRedirectUri: window.location.origin,
-    });
+    const keys = Object.keys(sessionStorage).filter(k =>
+      k.startsWith('msal.') || k.includes(AUTH_CONFIG.clientId)
+    );
+    keys.forEach(k => sessionStorage.removeItem(k));
   } catch (err) {
-    console.warn('Logout:', err);
+    console.warn('Logout cache clear:', err);
   }
   currentAccount = null;
+  msalInstance   = null;   // force fresh instance on next login
   onLogoutSuccess();
 }
 
@@ -74,23 +84,25 @@ async function getAccessToken() {
     });
     return response.accessToken;
   } catch {
-    // Silent refresh failed — fall back to popup
     const response = await instance.acquireTokenPopup({ scopes: LOGIN_SCOPES });
     return response.accessToken;
   }
 }
 
-// Check for existing session on page load
+// Called once on page load — checks for an existing session
 async function initAuth() {
-  try {
-    const instance = getMsalInstance();
-    await instance.handleRedirectPromise();
-    const accounts = instance.getAllAccounts();
-    if (accounts.length) {
-      currentAccount = accounts[0];
-      onLoginSuccess({ account: accounts[0] });
+  _authReady = (async () => {
+    try {
+      const instance = getMsalInstance();
+      await instance.handleRedirectPromise();
+      const accounts = instance.getAllAccounts();
+      if (accounts.length) {
+        currentAccount = accounts[0];
+        onLoginSuccess({ account: accounts[0] });
+      }
+    } catch (err) {
+      console.warn('Auth init:', err);
     }
-  } catch (err) {
-    console.warn('Auth init:', err);
-  }
+  })();
+  return _authReady;
 }
