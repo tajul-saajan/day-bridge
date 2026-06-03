@@ -123,7 +123,7 @@ async function loadAiSummary(tasks, emails) {
     const el = document.getElementById('aiBlockers');
     el.classList.remove('hidden');
     el.innerHTML = ai.blockers.map(b =>
-      `<span class="ai-blocker-chip">âš  ${escHtml(String(b))}</span>`
+      `<span class="ai-blocker-chip">  ${escHtml(String(b))}</span>`
     ).join('');
   }
 }
@@ -144,7 +144,7 @@ function _renderJiraUserBadge() {
   const badge = document.getElementById('jiraUserBadge');
   if (!badge) return;
   if (_jiraError) {
-    badge.innerHTML = `<span class="jira-user-badge jira-user-error" title="${escHtml(_jiraError)}">âš  Jira error</span>`;
+    badge.innerHTML = `<span class="jira-user-badge jira-user-error" title="${escHtml(_jiraError)}">  Jira error</span>`;
   } else if (_jiraQueryUser) {
     badge.innerHTML = `<span class="jira-user-badge" title="Fetching tickets assigned to ${escHtml(_jiraQueryUser)}">
       <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M8 1a4 4 0 1 1 0 8A4 4 0 0 1 8 1zm0 9c-4.42 0-7 2.24-7 3.5V15h14v-1.5C15 12.24 12.42 10 8 10z" fill="currentColor"/></svg>
