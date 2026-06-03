@@ -13,7 +13,6 @@ async function fetchMyJiraTickets(userEmail, accessToken) {
   return {
     issues:    data.issues    || [],
     queryUser: data.queryUser || userEmail || '',
-    authEmail: data.authEmail || '',
     error:     data.error     || null,
   };
 }

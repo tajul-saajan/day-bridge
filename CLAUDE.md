@@ -92,7 +92,7 @@ Both functions use the **classic Azure Functions v3** model: `module.exports = a
 - **`api/jira-tickets`** (GET, `?user=<email>`): Basic-auth to Jira with `JIRA_EMAIL:JIRA_TOKEN`,
   base `JIRA_BASE_URL` (default `https://wallstreetdocs.atlassian.net`). JQL:
   `assignee = "${user}" AND statusCategory != Done ORDER BY priority ASC, due ASC` (max 20).
-  Returns `{ issues, total, queryUser, authEmail, error }`.
+  Returns `{ issues, total, queryUser, error }`.
 - **`api/summarize`** (POST `{ tasks, emails }`): uses `@anthropic-ai/sdk` (`^0.30.0`), model
   `claude-opus-4-6`, `max_tokens: 600`. Returns `{ summary, focusOrder, blockers }`.
 

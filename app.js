@@ -102,7 +102,7 @@ async function loadLiveData(userEmail = _userEmail) {
     const events     = rawEvents.status     === 'fulfilled' ? normalizeEvents(rawEvents.value)     : [];
     const weekEvents = rawWeekEvents.status === 'fulfilled' ? normalizeEvents(rawWeekEvents.value) : [];
 
-    // Jira returns { issues, queryUser, authEmail, error }
+    // Jira returns { issues, queryUser, error }
     let tickets = [], jiraQueryUser = userEmail, jiraError = null;
     if (rawTickets.status === 'fulfilled') {
       const jiraResult = rawTickets.value;

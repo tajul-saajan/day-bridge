@@ -64,7 +64,6 @@ module.exports = async function (context, req) {
         issues:    data.issues || [],
         total:     data.total  || 0,
         queryUser,
-        authEmail,
         error:     null,
       },
     };
