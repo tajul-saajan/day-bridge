@@ -85,8 +85,8 @@ async function loadLiveData(userEmail) {
     } catch (err) {
       console.warn('AI summary unavailable:', err);
       document.getElementById('aiSummary').textContent =
-        `${tickets.length} open ticket${tickets.length !== 1 ? 's' : ''} Â· ` +
-        `${events.length} meeting${events.length !== 1 ? 's' : ''} today Â· ` +
+        `${tickets.length} open ticket${tickets.length !== 1 ? 's' : ''} · ` +
+        `${events.length} meeting${events.length !== 1 ? 's' : ''} today · ` +
         `${emails.length} unread email${emails.length !== 1 ? 's' : ''}`;
     }
 
@@ -176,7 +176,7 @@ function _applyTaskFilter() {
   list.innerHTML = toShow.map(t => {
     const dueLabel   = t.due ? formatDate(t.due) : '';
     const dueClass   = t.overdue ? 'task-due overdue' : 'task-due';
-    const typeAbbr   = { story: 'S', bug: 'B', task: 'T', epic: 'E', subtask: 'â†³' };
+    const typeAbbr   = { story: 'S', bug: 'B', task: 'T', epic: 'E', subtask: '↳' };
     const abbr       = typeAbbr[t.issueType] || 'T';
     const likelihood = calcCompletionLikelihood(t);
     const lkClass    = likelihood >= 70 ? 'lk-high' : likelihood >= 40 ? 'lk-mid' : 'lk-low';

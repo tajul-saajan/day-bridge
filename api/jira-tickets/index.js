@@ -16,7 +16,7 @@ module.exports = async function (context, req) {
 
   const auth = Buffer.from(`${authEmail}:${token}`).toString('base64');
   const jql  = encodeURIComponent(
-    `assignee = "${queryUser}" AND statusCategory != Done ORDER BY priority ASC, due ASC`
+    `assignee = "${queryUser}" AND (statusCategory != Done OR (statusCategory = Done AND updated >= startOfDay())) ORDER BY priority ASC, due ASC`
   );
   const fields = 'summary,priority,status,duedate,issuetype,assignee';
   const url    = `${baseUrl}/rest/api/3/search/jql?jql=${jql}&fields=${fields}&maxResults=20`;
