@@ -280,9 +280,10 @@ function renderCalendar(events) {
 
   list.innerHTML = events.map(e => {
     const time    = `${fmt12(e.start)} – ${fmt12(e.end)}`;
-    const openUrl = e.joinUrl;
+    // Every event is clickable: join a Teams meeting if there's a link, else open Outlook calendar.
+    const openUrl = e.joinUrl || 'https://outlook.office.com/calendar/view/day';
     return `
-    <div class="event-item ${e.isNow ? 'event-now' : ''}" ${openUrl ? `role="button" tabindex="0" data-url="${escHtml(openUrl)}"` : ''}>
+    <div class="event-item ${e.isNow ? 'event-now' : ''}" role="button" tabindex="0" data-url="${escHtml(openUrl)}">
       <div class="event-bar"></div>
       <div class="event-content">
         <div class="event-time">${time}</div>
@@ -512,4 +513,3 @@ function updateProductivityMeter(tasks, eventCount) {
     eventCount > 0 && `<span class="ps-chip">${eventCount} meeting${eventCount !== 1 ? 's' : ''}</span>`,
   ].filter(Boolean).join('');
 }
-

@@ -514,9 +514,31 @@ After adding, click **Grant admin consent for WSD** (requires global admin).
 | Task tracking | Jira REST API v3 (`/rest/api/3/search/jql`) |
 | Jira security | Azure Function proxy — token never in browser |
 | AI Summaries | Anthropic Claude via Azure Function |
-| Hosting | Azure Static Web Apps (Free tier) |
+| Hosting | Azure Static Web Apps — **Free plan** |
 | Serverless API | Azure Functions (Node.js, CommonJS) |
 | CI/CD | GitHub Actions |
+
+---
+
+## Hosting Plan
+
+DayBridge is currently hosted on the **Azure Static Web Apps Free plan**.
+
+| Feature | Free (current) | Standard |
+|---------|---------------|----------|
+| **Price** | **Free** | $9.00 USD / app / month |
+| Bandwidth | 100 GB / subscription | 100 GB / subscription |
+| Bandwidth overage | Free | $0.20 USD / GB |
+| Custom domains | 2 per app | 5 per app |
+| SSL certificates | Free | Free |
+| Custom authentication | — | ✅ |
+| Private endpoints | — | ✅ |
+| Max app size | 250 MB | 500 MB |
+| Staging environments | 3 | 10 |
+| Azure Functions | Managed | Managed or Bring your own |
+| Enterprise-grade edge | — | ✅ |
+
+> **Current plan: Free** — sufficient for internal WSD team use. The Free plan supports managed Azure Functions, unlimited GitHub Actions deployments, SSL, and up to 2 custom domains. Upgrade to Standard only if custom authentication providers, private endpoints, or enterprise edge are needed.
 
 ---
 
