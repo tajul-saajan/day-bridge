@@ -1,13 +1,10 @@
-﻿// â”€â”€â”€ DayBridge â€” Main Application â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-// Avatar colours cycle through these for email senders
+﻿// Avatar colours cycle through these for email senders
 const AVATAR_COLORS = ['#0078D4','#0052CC','#7B61FF','#0e7a3c','#c25000','#d92b3a','#6b7a90'];
 
 // Task filter state
 let _allTasks     = [];
 let _activeFilter = 'all';
 
-// â”€â”€â”€ Initialisation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 document.addEventListener('DOMContentLoaded', async () => {
   setDateDisplay();
@@ -21,8 +18,6 @@ function setDateDisplay() {
   const opts = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
   el.textContent = new Date().toLocaleDateString(undefined, opts);
 }
-
-// â”€â”€â”€ Auth Callbacks (called by auth.js) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function onLoginSuccess(response) {
   const name  = response.account?.name     || response.account?.username || 'User';
@@ -42,14 +37,12 @@ function onLogoutSuccess() {
   renderMockData();
 }
 
-// â”€â”€â”€ Live Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 async function loadLiveData(userEmail) {
-  showLoading('Fetching your dataâ€¦');
+  showLoading('Fetching your data…');
   try {
     const token = await getAccessToken();
 
-    updateLoadingText('Loading emails, calendar, and tasksâ€¦');
+    updateLoadingText('Loading emails, calendar, and tasks');
     const [rawEmails, rawEvents, rawWeekEvents, rawTickets] = await Promise.allSettled([
       fetchEmails(token),
       fetchCalendarEvents(token),
@@ -135,7 +128,6 @@ async function loadAiSummary(tasks, emails) {
   }
 }
 
-// â”€â”€â”€ Render â€” Tasks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 let _jiraQueryUser = '';
 let _jiraError     = null;
@@ -235,10 +227,10 @@ function renderCalendar(events) {
   }
 
   list.innerHTML = events.map(e => {
-    const time    = `${fmt12(e.start)} â€“ ${fmt12(e.end)}`;
-    const openUrl = e.joinUrl;
+    const time    = `${fmt12(e.start)} – ${fmt12(e.end)}`;
+    const openUrl = e.joinUrl || 'https://outlook.office.com/calendar/view/day';
     return `
-    <div class="event-item ${e.isNow ? 'event-now' : ''}" ${openUrl ? `onclick="window.open('${openUrl}','_blank')"` : ""} >
+    <div class="event-item ${e.isNow ? 'event-now' : ''}" onclick="window.open('${openUrl}','_blank')" style="cursor:pointer">
       <div class="event-bar"></div>
       <div class="event-content">
         <div class="event-time">${time}</div>
@@ -338,18 +330,16 @@ function renderMockData() {
 
   const fill = document.getElementById('psFill');
   if (fill) { fill.style.width = '0%'; fill.style.background = '#e1e6ed'; }
-  const pct    = document.getElementById('psPct');    if (pct)    pct.textContent    = 'â€”';
+  const pct    = document.getElementById('psPct');    if (pct)    pct.textContent    = '';
   const status = document.getElementById('psStatus'); if (status) { status.textContent = 'Sign in to calculate'; status.style.color = ''; }
   const chips  = document.getElementById('psChips');  if (chips)  chips.innerHTML    = '';
 
   document.getElementById('aiSummary').textContent =
-    'Sign in with Microsoft to get your AI-powered daily briefing â€” tasks, emails and calendar events prioritised for you.';
+    'Sign in with Microsoft to get your AI-powered daily briefing  tasks, emails and calendar events prioritised for you.';
 }
 
-// â”€â”€â”€ Loading helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 function showLoading(text) {
-  document.getElementById('loadingText').textContent = text || 'Loadingâ€¦';
+  document.getElementById('loadingText').textContent = text || 'Loading';
   document.getElementById('loadingOverlay').classList.remove('hidden');
 }
 function updateLoadingText(text) {
@@ -359,7 +349,6 @@ function hideLoading() {
   document.getElementById('loadingOverlay').classList.add('hidden');
 }
 
-// â”€â”€â”€ Utility helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -392,7 +381,6 @@ function taskIcon()     { return '<svg width="32" height="32" viewBox="0 0 18 18
 function calendarIcon() { return '<svg width="32" height="32" viewBox="0 0 18 18" fill="none"><rect x="1" y="3" width="16" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M1 7h16M6 1v4M12 1v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'; }
 function emailIcon()    { return '<svg width="32" height="32" viewBox="0 0 18 18" fill="none"><rect x="1" y="4" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M1 6l8 5 8-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'; }
 
-// â”€â”€â”€ Stats Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function updateStats(tasks, eventCount, emailCount) {
   const open = tasks.filter(t => t.status !== 'done').length;
@@ -404,7 +392,6 @@ function updateStats(tasks, eventCount, emailCount) {
   set('statEmails',      emailCount);
 }
 
-// â”€â”€â”€ Completion Likelihood â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function calcCompletionLikelihood(task) {
   if (task.status === 'done') return 100;
@@ -427,8 +414,6 @@ function calcCompletionLikelihood(task) {
 
   return Math.min(95, Math.max(5, Math.round(score)));
 }
-
-// â”€â”€â”€ Productivity Meter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function updateProductivityMeter(tasks, eventCount) {
   const inFlight = tasks.filter(t => t.status === 'inprogress' || t.status === 'review').length;
