@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "DayBridge Azure Functions — Jira proxy, Claude summary, health",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.30.0",
-    "jose": "^5.9.6"
+    "@anthropic-ai/sdk": "^0.30.0"
   }
 }

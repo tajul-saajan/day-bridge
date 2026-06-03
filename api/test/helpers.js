@@ -5,13 +5,13 @@
 const { setVerifier } = require('../shared/auth');
 const { setFactory }  = require('../shared/anthropic');
 
-// Stub the JWT verifier so tests never hit AAD JWKS. By default returns a valid
-// payload in the expected tenant.
+// Stub the token verifier so tests never call Microsoft Graph. By default
+// returns a valid principal (shaped like the Graph /me result).
 function stubAuthValid(payload = {}) {
   setVerifier(async () => ({
-    tid: 'a3be1280-7a3a-4edc-b258-0d6a539beee9',
     oid: 'user-oid',
-    preferred_username: 'test.user@wsd.com',
+    email: 'test.user@wsd.com',
+    name: 'Test User',
     ...payload,
   }));
 }
