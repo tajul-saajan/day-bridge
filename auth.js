@@ -41,16 +41,11 @@ async function handleLogin() {
   try {
     showLoading('Signing in…');
     const instance = getMsalInstance();
-
-    // Wait for any in-progress interaction from page-load initAuth to settle
-    if (_authReady) await _authReady.catch(() => {});
-
-    const response = await instance.loginPopup({ scopes: LOGIN_SCOPES });
-    currentAccount = response.account;
+    const response  = await instance.loginPopup({ scopes: LOGIN_SCOPES });
+    currentAccount  = response.account;
     onLoginSuccess(response);
   } catch (err) {
     hideLoading();
-    // Silently ignore user closing the popup
     if (err.errorCode === 'user_cancelled') return;
     console.error('Login failed:', err);
     alert(`Sign-in failed: ${err.message}`);
@@ -95,6 +90,13 @@ async function initAuth() {
     try {
       const instance = getMsalInstance();
       await instance.handleRedirectPromise();
+
+      // If this page is running inside the MSAL popup window,
+      // do nothing — MSAL has already sent the result to the parent.
+      // The popup will close itself; calling onLoginSuccess here would
+      // trigger a full data load inside the popup (causing the stuck spinner).
+      if (window.opener) return;
+
       const accounts = instance.getAllAccounts();
       if (accounts.length) {
         currentAccount = accounts[0];
