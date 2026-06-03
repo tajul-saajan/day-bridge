@@ -1,4 +1,4 @@
-// ─── DayBridge — Main Application ────────────────────────────────
+﻿// â”€â”€â”€ DayBridge â€” Main Application â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // Avatar colours cycle through these for email senders
 const AVATAR_COLORS = ['#0078D4','#0052CC','#7B61FF','#0e7a3c','#c25000','#d92b3a','#6b7a90'];
@@ -7,11 +7,11 @@ const AVATAR_COLORS = ['#0078D4','#0052CC','#7B61FF','#0e7a3c','#c25000','#d92b3
 let _allTasks     = [];
 let _activeFilter = 'all';
 
-// ─── Initialisation ─────────────────────────────────────────────
+// â”€â”€â”€ Initialisation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 document.addEventListener('DOMContentLoaded', async () => {
   setDateDisplay();
-  renderMockData();   // show demo data immediately — presentable without sign-in
+  renderMockData();   // show demo data immediately â€” presentable without sign-in
   initAuth().catch(console.warn);
 });
 
@@ -22,7 +22,7 @@ function setDateDisplay() {
   el.textContent = new Date().toLocaleDateString(undefined, opts);
 }
 
-// ─── Auth Callbacks (called by auth.js) ─────────────────────────
+// â”€â”€â”€ Auth Callbacks (called by auth.js) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function onLoginSuccess(response) {
   const name  = response.account?.name     || response.account?.username || 'User';
@@ -42,14 +42,14 @@ function onLogoutSuccess() {
   renderMockData();
 }
 
-// ─── Live Data ───────────────────────────────────────────────────
+// â”€â”€â”€ Live Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function loadLiveData(userEmail) {
-  showLoading('Fetching your data…');
+  showLoading('Fetching your dataâ€¦');
   try {
     const token = await getAccessToken();
 
-    updateLoadingText('Loading emails, calendar, and tasks…');
+    updateLoadingText('Loading emails, calendar, and tasksâ€¦');
     const [rawEmails, rawEvents, rawWeekEvents, rawTickets] = await Promise.allSettled([
       fetchEmails(token),
       fetchCalendarEvents(token),
@@ -85,15 +85,23 @@ async function loadLiveData(userEmail) {
     document.getElementById('lastUpdated').textContent =
       'Last updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    // AI summary — optional, silently skip if function not deployed
-    updateLoadingText('Getting AI summary…');
-    await loadAiSummary(tickets, emails.slice(0, 5)).catch(console.warn);
+    // AI summary â€” show stat fallback if Claude unavailable
+    updateLoadingText('Getting AI summaryâ€¦');
+    try {
+      await loadAiSummary(tickets, emails.slice(0, 5));
+    } catch (err) {
+      console.warn('AI summary unavailable:', err);
+      document.getElementById('aiSummary').textContent =
+        `${tickets.length} open ticket${tickets.length !== 1 ? 's' : ''} Â· ` +
+        `${events.length} meeting${events.length !== 1 ? 's' : ''} today Â· ` +
+        `${emails.length} unread email${emails.length !== 1 ? 's' : ''}`;
+    }
 
   } catch (err) {
     console.error('loadLiveData:', err);
     const dot = document.querySelector('.status-dot');
     if (dot) { dot.className = 'status-dot offline'; }
-    document.getElementById('statusText').textContent = 'Error — using demo data';
+    document.getElementById('statusText').textContent = 'Error â€” using demo data';
   } finally {
     hideLoading();
   }
@@ -105,7 +113,7 @@ async function loadAiSummary(tasks, emails) {
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ tasks, emails }),
   });
-  if (!res.ok) return;
+  if (!res.ok) throw new Error(`AI summary: ${res.status}`);
   const ai = await res.json();
 
   if (ai.summary) {
@@ -115,19 +123,19 @@ async function loadAiSummary(tasks, emails) {
     const el = document.getElementById('aiFocusItems');
     el.classList.remove('hidden');
     el.innerHTML = ai.focusOrder.map(item =>
-      `<span class="ai-focus-chip">↑ ${escHtml(String(item))}</span>`
+      `<span class="ai-focus-chip">â†‘ ${escHtml(String(item))}</span>`
     ).join('');
   }
   if (ai.blockers?.length) {
     const el = document.getElementById('aiBlockers');
     el.classList.remove('hidden');
     el.innerHTML = ai.blockers.map(b =>
-      `<span class="ai-blocker-chip">⚠ ${escHtml(String(b))}</span>`
+      `<span class="ai-blocker-chip">âš  ${escHtml(String(b))}</span>`
     ).join('');
   }
 }
 
-// ─── Render — Tasks ──────────────────────────────────────────────
+// â”€â”€â”€ Render â€” Tasks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 let _jiraQueryUser = '';
 let _jiraError     = null;
@@ -144,7 +152,7 @@ function _renderJiraUserBadge() {
   const badge = document.getElementById('jiraUserBadge');
   if (!badge) return;
   if (_jiraError) {
-    badge.innerHTML = `<span class="jira-user-badge jira-user-error" title="${escHtml(_jiraError)}">⚠ Jira error</span>`;
+    badge.innerHTML = `<span class="jira-user-badge jira-user-error" title="${escHtml(_jiraError)}">âš  Jira error</span>`;
   } else if (_jiraQueryUser) {
     badge.innerHTML = `<span class="jira-user-badge" title="Fetching tickets assigned to ${escHtml(_jiraQueryUser)}">
       <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M8 1a4 4 0 1 1 0 8A4 4 0 0 1 8 1zm0 9c-4.42 0-7 2.24-7 3.5V15h14v-1.5C15 12.24 12.42 10 8 10z" fill="currentColor"/></svg>
@@ -176,7 +184,7 @@ function _applyTaskFilter() {
   list.innerHTML = toShow.map(t => {
     const dueLabel   = t.due ? formatDate(t.due) : '';
     const dueClass   = t.overdue ? 'task-due overdue' : 'task-due';
-    const typeAbbr   = { story: 'S', bug: 'B', task: 'T', epic: 'E', subtask: '↳' };
+    const typeAbbr   = { story: 'S', bug: 'B', task: 'T', epic: 'E', subtask: 'â†³' };
     const abbr       = typeAbbr[t.issueType] || 'T';
     const likelihood = calcCompletionLikelihood(t);
     const lkClass    = likelihood >= 70 ? 'lk-high' : likelihood >= 40 ? 'lk-mid' : 'lk-low';
@@ -215,7 +223,7 @@ function filterTasks(priority) {
   _applyTaskFilter();
 }
 
-// ─── Render — Calendar ───────────────────────────────────────────
+// â”€â”€â”€ Render â€” Calendar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function renderCalendar(events) {
   const list = document.getElementById('eventList');
@@ -227,10 +235,10 @@ function renderCalendar(events) {
   }
 
   list.innerHTML = events.map(e => {
-    const time    = `${fmt12(e.start)} – ${fmt12(e.end)}`;
-    const openUrl = e.joinUrl || 'https://outlook.office.com/calendar/view/day';
+    const time    = `${fmt12(e.start)} â€“ ${fmt12(e.end)}`;
+    const openUrl = e.joinUrl;
     return `
-    <div class="event-item ${e.isNow ? 'event-now' : ''}" onclick="window.open('${openUrl}','_blank')">
+    <div class="event-item ${e.isNow ? 'event-now' : ''}" ${openUrl ? `onclick="window.open('${openUrl}','_blank')"` : ""} >
       <div class="event-bar"></div>
       <div class="event-content">
         <div class="event-time">${time}</div>
@@ -242,7 +250,7 @@ function renderCalendar(events) {
   }).join('');
 }
 
-// ─── Render — Emails ─────────────────────────────────────────────
+// â”€â”€â”€ Render â€” Emails â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function renderEmails(emails) {
   const list = document.getElementById('emailList');
@@ -257,7 +265,7 @@ function renderEmails(emails) {
     const color   = AVATAR_COLORS[i % AVATAR_COLORS.length];
     const initial = e.from.charAt(0).toUpperCase();
     const date    = formatDate(e.date);
-    const url     = e.webLink || 'https://outlook.office.com/mail/';
+    const url     = 'https://outlook.office.com/mail/';
     return `
     <div class="email-item" onclick="window.open('${url}','_blank')">
       <div class="email-avatar" style="background:${color}">${initial}</div>
@@ -273,7 +281,7 @@ function renderEmails(emails) {
   }).join('');
 }
 
-// ─── Render — Weekly Schedule ────────────────────────────────────
+// â”€â”€â”€ Render â€” Weekly Schedule â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function renderWeeklySchedule(allEvents) {
   const el = document.getElementById('weeklyList');
@@ -319,7 +327,7 @@ function renderWeeklySchedule(allEvents) {
   }).join('');
 }
 
-// ─── Empty state before sign-in ──────────────────────────────────
+// â”€â”€â”€ Empty state before sign-in â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function renderMockData() {
   renderTasks([]);
@@ -330,18 +338,18 @@ function renderMockData() {
 
   const fill = document.getElementById('psFill');
   if (fill) { fill.style.width = '0%'; fill.style.background = '#e1e6ed'; }
-  const pct    = document.getElementById('psPct');    if (pct)    pct.textContent    = '—';
+  const pct    = document.getElementById('psPct');    if (pct)    pct.textContent    = 'â€”';
   const status = document.getElementById('psStatus'); if (status) { status.textContent = 'Sign in to calculate'; status.style.color = ''; }
   const chips  = document.getElementById('psChips');  if (chips)  chips.innerHTML    = '';
 
   document.getElementById('aiSummary').textContent =
-    'Sign in with Microsoft to get your AI-powered daily briefing — tasks, emails and calendar events prioritised for you.';
+    'Sign in with Microsoft to get your AI-powered daily briefing â€” tasks, emails and calendar events prioritised for you.';
 }
 
-// ─── Loading helpers ─────────────────────────────────────────────
+// â”€â”€â”€ Loading helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function showLoading(text) {
-  document.getElementById('loadingText').textContent = text || 'Loading…';
+  document.getElementById('loadingText').textContent = text || 'Loadingâ€¦';
   document.getElementById('loadingOverlay').classList.remove('hidden');
 }
 function updateLoadingText(text) {
@@ -351,7 +359,7 @@ function hideLoading() {
   document.getElementById('loadingOverlay').classList.add('hidden');
 }
 
-// ─── Utility helpers ─────────────────────────────────────────────
+// â”€â”€â”€ Utility helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -384,7 +392,7 @@ function taskIcon()     { return '<svg width="32" height="32" viewBox="0 0 18 18
 function calendarIcon() { return '<svg width="32" height="32" viewBox="0 0 18 18" fill="none"><rect x="1" y="3" width="16" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M1 7h16M6 1v4M12 1v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'; }
 function emailIcon()    { return '<svg width="32" height="32" viewBox="0 0 18 18" fill="none"><rect x="1" y="4" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M1 6l8 5 8-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'; }
 
-// ─── Stats Bar ───────────────────────────────────────────────────
+// â”€â”€â”€ Stats Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function updateStats(tasks, eventCount, emailCount) {
   const open = tasks.filter(t => t.status !== 'done').length;
@@ -396,7 +404,7 @@ function updateStats(tasks, eventCount, emailCount) {
   set('statEmails',      emailCount);
 }
 
-// ─── Completion Likelihood ────────────────────────────────────────
+// â”€â”€â”€ Completion Likelihood â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function calcCompletionLikelihood(task) {
   if (task.status === 'done') return 100;
@@ -411,7 +419,7 @@ function calcCompletionLikelihood(task) {
     const today  = new Date(); today.setHours(0,0,0,0);
     const dueDay = new Date(task.due); dueDay.setHours(0,0,0,0);
     const diff   = Math.round((dueDay - today) / 86400000);
-    if (diff < 0)      score += 18;   // overdue — high urgency
+    if (diff < 0)      score += 18;   // overdue â€” high urgency
     else if (diff === 0) score += 22; // due today
     else if (diff === 1) score += 8;
     else if (diff > 5)   score -= 8;
@@ -420,7 +428,7 @@ function calcCompletionLikelihood(task) {
   return Math.min(95, Math.max(5, Math.round(score)));
 }
 
-// ─── Productivity Meter ───────────────────────────────────────────
+// â”€â”€â”€ Productivity Meter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function updateProductivityMeter(tasks, eventCount) {
   const inFlight = tasks.filter(t => t.status === 'inprogress' || t.status === 'review').length;
@@ -458,3 +466,4 @@ function updateProductivityMeter(tasks, eventCount) {
     eventCount > 0 && `<span class="ps-chip">${eventCount} meeting${eventCount !== 1 ? 's' : ''}</span>`,
   ].filter(Boolean).join('');
 }
+
