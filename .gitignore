@@ -5,7 +5,10 @@
 
 # Dependencies — exclude node_modules but keep lock files
 node_modules/
-api/summarize/node_modules/
+api/node_modules/
+
+# Build artefacts (WSD-014 meta files are generated, not committed)
+build/
 
 # OS
 .DS_Store

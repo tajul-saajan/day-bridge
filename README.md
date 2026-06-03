@@ -978,3 +978,38 @@ LIVE APP
  ✓ Calendar and emails loading
  ✓ AI summary generating
 ```
+
+---
+
+## Standards Compliance & Deviations (WSD)
+
+DayBridge follows the WSD engineering standards where they apply to a static-SPA +
+managed-Functions service, and records explicit, owned deviations where they do not.
+
+**Owner:** wsd-productivity · **Contact:** tajul.islam@wsd.com · **Last reviewed:** 2026-06-03
+
+### Controls in place
+| Standard | Control |
+|---|---|
+| WSD-001 Observability | Structured JSON logs with required fields + `correlationId` (`api/shared/logger.js`); W3C `traceparent` generated/propagated (`api/shared/trace.js`). |
+| WSD-007 Secrets | `secrets.yaml` at repo root declares `jira-token` and `claude-api-key` with paths, owner, and 90-day rotation. |
+| WSD-011 REST API | RFC 9457 error envelopes (`api/shared/http.js`); correct status codes (no 200-on-failure); `GET /api/health` with `pass/warn/fail`; `traceparent` propagation; `openapi.yaml` as the API source of truth. |
+| WSD-012 Service Design | Single repo, server-side secret handling, `/health`, structured logging, self-contained API. |
+| WSD-014 Delivery | `Makefile` targets `init`/`build`/`test`/`container` producing `build/meta-build.json` and `build/meta-artefacts.json`; CI runs syntax gate, `npm audit` SAST, unit/integration tests, and CodeQL before deploy. |
+| WSD-015 Testing | `node:test` suites for every function and shared module (`api/test/`), covering happy path, auth, validation/injection, and upstream-error cases. |
+
+### Documented deviations
+1. **WSD-008 / WSD-012 — containers on Kubernetes (Helm).** DayBridge is intentionally an
+   **Azure Static Web App with managed Azure Functions** — no containers, no K8s, no Helm.
+   Rationale: lightweight internal tool best served by SWA-native hosting. Compensating
+   controls: all of the above. **Waiver owner:** wsd-productivity.
+2. **WSD-011 — `/health` must be internal-only.** SWA managed functions have no private
+   network, so `/api/health` is reachable externally. Mitigation: it returns only
+   non-sensitive presence booleans (never secret values).
+3. **API authentication — token audience.** The SPA forwards its MSAL Azure AD access token
+   as a bearer; functions validate signature, issuer, tenant, and expiry against the tenant
+   JWKS (`api/shared/auth.js`). The token's audience is Microsoft Graph rather than a
+   dedicated DayBridge API — a real gate against anonymous callers, with a registered app API
+   scope as the proper long-term fix.
+4. **WSD-007 — secret store.** Secrets are injected at runtime via **Azure SWA → Configuration**
+   today; HashiCorp Vault is the organisation's standard target (paths declared in `secrets.yaml`).

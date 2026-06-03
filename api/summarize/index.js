@@ -1,28 +1,44 @@
 // Azure Function: POST /api/summarize
-// Deploy this folder as an Azure Function inside a Static Web App (managed functions).
-// Set env var CLAUDE_API_KEY in Azure Portal → Configuration.
+// Sends the caller's open tasks and unread emails to Claude and returns a
+// concise daily briefing. Requires an authenticated caller (bearer token).
+// Set CLAUDE_API_KEY in Azure Portal → Configuration. Model is overridable via
+// CLAUDE_MODEL.
 
-const Anthropic = require('@anthropic-ai/sdk');
+const { parseTraceparent, childHeaders } = require('../shared/trace');
+const { makeLogger } = require('../shared/logger');
+const { problem } = require('../shared/http');
+const { requireAuth } = require('../shared/auth');
+const { createClient } = require('../shared/anthropic');
+
+const DEFAULT_MODEL = 'claude-opus-4-6';
 
 module.exports = async function (context, req) {
+  const trace = parseTraceparent(req);
+  const log   = makeLogger(context, { traceId: trace.traceId });
+  const traceHeader = { traceparent: trace.traceparent };
+
   if (req.method !== 'POST') {
-    context.res = { status: 405, body: 'Method Not Allowed' };
+    problem(context, { status: 405, type: 'validation', code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed.', headers: traceHeader });
     return;
   }
 
+  const principal = await requireAuth(context, req, log);
+  if (!principal) return;
+
   const { tasks, emails } = req.body || {};
   if (!tasks && !emails) {
-    context.res = { status: 400, body: { error: 'tasks and emails required' } };
+    problem(context, { status: 400, type: 'validation', code: 'FIELD_VALIDATION_FAILED', message: 'tasks and emails are required.', params: { tasks: 'required', emails: 'required' }, headers: traceHeader });
     return;
   }
 
   const apiKey = process.env.CLAUDE_API_KEY;
   if (!apiKey) {
-    context.res = { status: 500, body: { error: 'CLAUDE_API_KEY not configured' } };
+    log.error('CLAUDE_API_KEY not configured');
+    problem(context, { status: 500, type: 'server', code: 'CONFIG_MISSING', message: 'AI summarisation is not configured.', headers: traceHeader });
     return;
   }
 
-  const client = new Anthropic({ apiKey });
+  const client = createClient(apiKey);
 
   const prompt = `You are a productivity assistant. Given a user's open tasks and unread emails,
 produce a concise daily briefing.
@@ -40,23 +56,32 @@ Respond ONLY with valid JSON in this exact shape:
   "blockers": ["description of any blockers or urgent items", ...]
 }`;
 
+  let msg;
   try {
-    const msg = await client.messages.create({
-      model:      'claude-opus-4-6',
+    msg = await client.messages.create({
+      model:      process.env.CLAUDE_MODEL || DEFAULT_MODEL,
       max_tokens: 600,
       messages:   [{ role: 'user', content: prompt }],
-    });
-
-    const raw  = msg.content[0].text.trim();
-    const json = JSON.parse(raw.replace(/^```json\n?/, '').replace(/\n?```$/, ''));
-
-    context.res = {
-      status:  200,
-      headers: { 'Content-Type': 'application/json' },
-      body:    json,
-    };
+    }, { headers: childHeaders(trace) });
   } catch (err) {
-    context.log.error('Summarize function error:', err);
-    context.res = { status: 500, body: { error: 'AI summarization failed', detail: err.message } };
+    log.error('Anthropic request failed', { reason: err.message });
+    problem(context, { status: 502, type: 'server', code: 'AI_UPSTREAM_ERROR', message: 'AI summarisation failed.', headers: traceHeader });
+    return;
   }
+
+  let json;
+  try {
+    const raw = msg.content[0].text.trim();
+    json = JSON.parse(raw.replace(/^```json\n?/, '').replace(/\n?```$/, ''));
+  } catch (err) {
+    log.error('Anthropic returned unparseable output', { reason: err.message });
+    problem(context, { status: 502, type: 'server', code: 'AI_BAD_RESPONSE', message: 'AI returned an unexpected response.', headers: traceHeader });
+    return;
+  }
+
+  context.res = {
+    status: 200,
+    headers: { 'Content-Type': 'application/json', ...traceHeader },
+    body: json,
+  };
 };
