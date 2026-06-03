@@ -67,3 +67,34 @@ test('auth: requireAuth rejects an invalid token', async () => {
   assert.equal(r, null);
   assert.equal(ctx.res.status, 401);
 });
+
+// Default verifier path: a forwarded Graph token is validated by calling Graph
+// /me (stubbed here via the shared http layer), NOT by JWKS signature checks.
+const { setVerifier } = require('../shared/auth');
+const http = require('../shared/http');
+
+test('auth: default verifier authenticates via Graph /me', async () => {
+  setVerifier(null); // use the real defaultVerify (Graph-backed)
+  http.setRequestJson(async (url) => {
+    assert.ok(url.startsWith('https://graph.microsoft.com/v1.0/me'));
+    return { id: 'oid-123', mail: 'real.user@wsd.com', displayName: 'Real User' };
+  });
+  const ctx = makeContext();
+  const r = await requireAuth(ctx, makeReq(), null);
+  assert.ok(r);
+  assert.equal(r.userId, 'oid-123');
+  assert.equal(r.email, 'real.user@wsd.com');
+  http.setRequestJson(null);
+  setVerifier(null);
+});
+
+test('auth: default verifier rejects when Graph /me fails (bad token)', async () => {
+  setVerifier(null);
+  http.setRequestJson(async () => { const e = new Error('x'); e.statusCode = 401; throw e; });
+  const ctx = makeContext();
+  const r = await requireAuth(ctx, makeReq(), null);
+  assert.equal(r, null);
+  assert.equal(ctx.res.status, 401);
+  http.setRequestJson(null);
+  setVerifier(null);
+});

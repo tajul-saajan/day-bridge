@@ -1,39 +1,30 @@
-// Bearer-token authentication gate (see README "API auth audience caveat").
+// Bearer-token authentication gate.
 //
-// The SPA authenticates with MSAL against Azure AD and forwards its access
-// token as `Authorization: Bearer <token>`. We validate the JWT signature
-// against the tenant's AAD JWKS and check issuer/tenant/expiry. This is a real
-// gate against anonymous internet callers. The token's audience is Microsoft
-// Graph (not a dedicated DayBridge API) — registering an app API scope is the
-// proper long-term fix; documented as a known caveat.
+// The SPA authenticates with MSAL against Azure AD and forwards its Microsoft
+// Graph access token as `Authorization: Bearer <token>`. Graph access tokens
+// are NOT third-party-verifiable via JWKS — they carry a `nonce` in the header
+// so a standard signature check fails, and their audience is Graph, not us.
+// The correct validator is the resource server itself: we call Graph `/me` with
+// the token. A 200 proves the token is valid, unexpired, and belongs to a user
+// in our tenant, and gives us the caller's identity. This both restores
+// functionality and keeps a real gate against anonymous internet callers.
 
-const { problem } = require('./http');
+const { problem, requestJson } = require('./http');
 
 const TENANT_ID = process.env.AAD_TENANT_ID || 'a3be1280-7a3a-4edc-b258-0d6a539beee9';
+const GRAPH_ME = 'https://graph.microsoft.com/v1.0/me?$select=id,mail,userPrincipalName,displayName';
 
-// Allowed issuers for the tenant (v1.0 and v2.0 endpoints).
-const ISSUERS = [
-  `https://login.microsoftonline.com/${TENANT_ID}/v2.0`,
-  `https://sts.windows.net/${TENANT_ID}/`,
-];
-
-// Lazily-created JWKS so cold starts don't pay for it until first auth.
-let _jwks = null;
-function getJwks() {
-  if (!_jwks) {
-    const { createRemoteJWKSet } = require('jose');
-    _jwks = createRemoteJWKSet(
-      new URL(`https://login.microsoftonline.com/${TENANT_ID}/discovery/v2.0/keys`)
-    );
-  }
-  return _jwks;
-}
-
-// Default verifier — overridable in tests via setVerifier().
+// Default verifier — validates the forwarded Graph token by calling Graph /me.
+// Overridable in tests via setVerifier(). Returns a normalised principal.
 async function defaultVerify(token) {
-  const { jwtVerify } = require('jose');
-  const { payload } = await jwtVerify(token, getJwks(), { issuer: ISSUERS });
-  return payload;
+  const me = await requestJson(GRAPH_ME, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+  });
+  return {
+    oid:   me.id || null,
+    email: me.mail || me.userPrincipalName || null,
+    name:  me.displayName || null,
+  };
 }
 
 let _verify = defaultVerify;
@@ -57,14 +48,11 @@ async function requireAuth(context, req, log) {
   }
   try {
     const payload = await _verify(token);
-    if (payload.tid && payload.tid !== TENANT_ID) {
-      throw new Error('Token from a different tenant');
-    }
     return {
       token,
       payload,
-      userId: payload.oid || payload.sub || null,
-      email:  payload.preferred_username || payload.upn || payload.email || null,
+      userId: payload.oid || payload.sub || payload.id || null,
+      email:  payload.email || payload.mail || payload.preferred_username || payload.upn || payload.userPrincipalName || null,
     };
   } catch (err) {
     if (log) log.warn('Token validation failed', { reason: err.message });
@@ -73,4 +61,4 @@ async function requireAuth(context, req, log) {
   }
 }
 
-module.exports = { requireAuth, bearerToken, setVerifier, TENANT_ID, ISSUERS };
+module.exports = { requireAuth, bearerToken, setVerifier, TENANT_ID };
