@@ -116,7 +116,7 @@ async function loadAiSummary(tasks, emails) {
     const el = document.getElementById('aiFocusItems');
     el.classList.remove('hidden');
     el.innerHTML = ai.focusOrder.map(item =>
-      `<span class="ai-focus-chip">â†‘ ${escHtml(String(item))}</span>`
+      `<span class="ai-focus-chip">  ${escHtml(String(item))}</span>`
     ).join('');
   }
   if (ai.blockers?.length) {
