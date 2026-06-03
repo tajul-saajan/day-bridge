@@ -89,9 +89,10 @@ runs on push/PR to `main` (Node 20). It installs `api/summarize` deps and deploy
 
 Both functions use the **classic Azure Functions v3** model: `module.exports = async function (context, req)` + a sibling `function.json` (`authLevel: anonymous`).
 
-- **`api/jira-tickets`** (GET, `?user=<email>`): Basic-auth to Jira with `JIRA_EMAIL:JIRA_TOKEN`,
-  base `JIRA_BASE_URL` (default `https://wallstreetdocs.atlassian.net`). JQL:
-  `assignee = "${user}" AND statusCategory != Done ORDER BY priority ASC, due ASC` (max 20).
+- **`api/jira-tickets`** (GET): Basic-auth to Jira with `JIRA_EMAIL:JIRA_TOKEN`,
+  base `JIRA_BASE_URL` (default `https://wallstreetdocs.atlassian.net`). Queries the
+  authenticated caller's own tickets (identity from the bearer token, not a param). JQL:
+  `assignee = "${caller}" AND statusCategory != Done ORDER BY priority ASC, due ASC` (max 20).
   Returns `{ issues, total, queryUser, authEmail, error }`.
 - **`api/summarize`** (POST `{ tasks, emails }`): uses `@anthropic-ai/sdk` (`^0.30.0`), model
   `claude-opus-4-6`, `max_tokens: 600`. Returns `{ summary, focusOrder, blockers }`.

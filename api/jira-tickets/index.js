@@ -1,6 +1,7 @@
-// Azure Function: GET /api/jira-tickets?user=<email>
+// Azure Function: GET /api/jira-tickets
 // Proxies Jira REST search server-side so the Jira token never reaches the
-// browser. Requires an authenticated caller (bearer token).
+// browser. Requires an authenticated caller (bearer token); the tickets
+// returned are always the authenticated caller's own.
 
 const { parseTraceparent, childHeaders } = require('../shared/trace');
 const { makeLogger } = require('../shared/logger');
@@ -23,8 +24,13 @@ module.exports = async function (context, req) {
   const token     = process.env.JIRA_TOKEN;
   const baseUrl   = process.env.JIRA_BASE_URL || 'https://wallstreetdocs.atlassian.net';
 
-  // Default to the authenticated caller's own email when no user param given.
-  const queryUser = req.query.user || principal.email || authEmail;
+  // Identity comes only from the verified token — never a caller-supplied param,
+  // which would let any authenticated user enumerate anyone else's tickets.
+  const queryUser = principal.email;
+  if (!queryUser) {
+    problem(context, { status: 403, type: 'authorization', code: 'NO_CALLER_IDENTITY', message: 'Could not determine caller identity from token.', headers: traceHeader });
+    return;
+  }
 
   if (!token) {
     log.error('JIRA_TOKEN not configured');
@@ -35,7 +41,7 @@ module.exports = async function (context, req) {
   if (!USER_RE.test(queryUser)) {
     problem(context, {
       status: 400, type: 'validation', code: 'FIELD_VALIDATION_FAILED',
-      message: 'Invalid user parameter.', params: { user: 'must be a valid account identifier' },
+      message: 'Invalid account identifier on token.', params: { user: 'must be a valid account identifier' },
       headers: traceHeader,
     });
     return;

@@ -1,9 +1,10 @@
 // Jira REST API helpers — proxied through Azure Function to keep token server-side
 
 async function fetchMyJiraTickets(userEmail, accessToken) {
-  const params = userEmail ? `?user=${encodeURIComponent(userEmail)}` : '';
+  // The server derives the user from the bearer token, so no ?user param is sent.
+  // userEmail is kept only as a local display fallback for the queryUser badge.
   const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
-  const res = await fetch(`/api/jira-tickets${params}`, { headers });
+  const res = await fetch('/api/jira-tickets', { headers });
   if (!res.ok) throw new Error(`Jira proxy: ${res.status} ${res.statusText}`);
   const data = await res.json();
 
