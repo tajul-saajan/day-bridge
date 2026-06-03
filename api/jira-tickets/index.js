@@ -42,12 +42,16 @@ module.exports = async function (context, req) {
   }
 
   const auth = Buffer.from(`${authEmail}:${token}`).toString('base64');
-  // queryUser is already strictly validated; escape defensively as belt-and-braces.
-  const safeUser = queryUser.replace(/(["\\])/g, '\\$1');
-  // Include all active tickets (To Do + In Progress) plus anything moved to Done
-  // today, so the list shows In Progress items and the "Done Today" stat works.
+
+  // Jira Cloud no longer matches assignee by email (GDPR), so resolve the email
+  // to the user's accountId first; fall back to the raw value if lookup fails.
+  const accountId = await resolveAccountId(baseUrl, auth, queryUser, childHeaders(trace), log);
+  const assignee  = (accountId || queryUser).replace(/(["\\])/g, '\\$1');
+
+  // Show every active ticket assigned to the user (To Do, In Progress, In Review,
+  // …) — i.e. anything not in the Done category.
   const jql  = encodeURIComponent(
-    `assignee = "${safeUser}" AND (statusCategory != Done OR statusCategoryChangedDate >= startOfDay()) ORDER BY statusCategory ASC, priority ASC, due ASC`
+    `assignee = "${assignee}" AND statusCategory != Done ORDER BY priority ASC, due ASC`
   );
   const fields = 'summary,priority,status,duedate,issuetype,assignee';
   const url    = `${baseUrl}/rest/api/3/search/jql?jql=${jql}&fields=${fields}&maxResults=50`;
@@ -79,3 +83,21 @@ module.exports = async function (context, req) {
     }
   }
 };
+
+// Resolve a user's email to their Jira accountId. Returns null on any failure so
+// the caller can fall back to querying by the raw value.
+async function resolveAccountId(baseUrl, auth, email, traceHeaders, log) {
+  try {
+    const users = await requestJson(
+      `${baseUrl}/rest/api/3/user/search?query=${encodeURIComponent(email)}`,
+      { method: 'GET', headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' }, traceHeaders }
+    );
+    if (Array.isArray(users) && users.length) {
+      const exact = users.find(u => (u.emailAddress || '').toLowerCase() === email.toLowerCase());
+      return (exact || users[0]).accountId || null;
+    }
+  } catch (err) {
+    log.warn('Jira user lookup failed', { statusCode: err.statusCode });
+  }
+  return null;
+}
