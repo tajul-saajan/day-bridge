@@ -126,17 +126,17 @@ async function loadLiveData(userEmail = _userEmail) {
     document.getElementById('lastUpdated').textContent =
       'Last updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    // AI summary — show stat fallback if Claude unavailable
-    updateLoadingText('Getting AI summary');
-    try {
-      await loadAiSummary(tickets, emails.slice(0, 5), token);
-    } catch (err) {
+    // The dashboard is fully usable now, so load the AI summary in the background
+    // instead of holding the loading overlay (and the whole UI) on Claude. It
+    // streams into the banner when ready; on failure we show a stat fallback.
+    document.getElementById('aiSummary').textContent = 'Generating your daily briefing…';
+    loadAiSummary(tickets, emails.slice(0, 5), token).catch(err => {
       console.warn('AI summary unavailable:', err);
       document.getElementById('aiSummary').textContent =
         `${tickets.length} open ticket${tickets.length !== 1 ? 's' : ''} · ` +
         `${events.length} meeting${events.length !== 1 ? 's' : ''} today · ` +
         `${emails.length} unread email${emails.length !== 1 ? 's' : ''}`;
-    }
+    });
 
   } catch (err) {
     console.error('loadLiveData:', err);
