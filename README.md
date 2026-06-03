@@ -479,3 +479,464 @@ After adding, click **Grant admin consent for WSD** (requires global admin).
 | Hosting | Azure Static Web Apps (Free tier) |
 | Serverless API | Azure Functions (Node.js, CommonJS) |
 | CI/CD | GitHub Actions |
+
+---
+
+## Complete Setup Workflow — How This Was Built
+
+This section documents the full end-to-end setup process: Azure AD app registration, Azure Static Web App creation, GitHub pipeline, and repository management.
+
+---
+
+### Part 1 — Azure Active Directory (AAD) App Registration
+
+#### 1.1 Create the App Registration
+
+1. Go to [portal.azure.com](https://portal.azure.com)
+2. Search for **Azure Active Directory** → **App registrations** → **+ New registration**
+
+| Field | Value |
+|-------|-------|
+| Name | `DayBridge` |
+| Supported account types | Accounts in this organizational directory only (WSD) |
+| Redirect URI | Single-page application → `https://gentle-bush-0d4ceb603.7.azurestaticapps.net` |
+
+3. Click **Register**
+4. Copy the following values (needed for `auth.js`):
+   - **Application (client) ID** → `CLIENT_ID`
+   - **Directory (tenant) ID** → `TENANT_ID`
+
+#### 1.2 Add API Permissions
+
+App registration → **API permissions** → **+ Add a permission** → **Microsoft Graph** → **Delegated permissions**
+
+Search and add each:
+
+| Permission | Purpose |
+|-----------|---------|
+| `User.Read` | Read signed-in user profile and name |
+| `Mail.Read` | Fetch unread emails from inbox |
+| `Calendars.Read` | Read today's and weekly calendar events |
+
+After adding all three → click **Grant admin consent for Wall Street Docs** → confirm **Yes**
+
+> You must be a Global Admin to grant tenant-wide consent.
+
+#### 1.3 Configure Authentication Settings
+
+App registration → **Authentication**
+
+Under **Single-page application**, add ALL redirect URIs:
+
+```
+http://localhost:3000
+https://gentle-bush-0d4ceb603.7.azurestaticapps.net
+```
+
+Enable:
+- **Access tokens** (used for implicit flow fallback)
+- **ID tokens**
+
+Click **Save**
+
+#### 1.4 Verify Permissions
+
+App registration → **API permissions**
+
+You should see:
+
+```
+Microsoft Graph (3)
+├── Calendars.Read     Delegated    ✓ Granted
+├── Mail.Read          Delegated    ✓ Granted
+└── User.Read          Delegated    ✓ Granted
+```
+
+---
+
+### Part 2 — Azure Resource Group
+
+#### 2.1 Create Resource Group
+
+1. Azure portal → **Resource groups** → **+ Create**
+
+| Field | Value |
+|-------|-------|
+| Subscription | WSD-DA2-Dev-Azure-Sub |
+| Resource group name | `web_apps_internal` |
+| Region | UK South |
+
+2. Click **Review + create** → **Create**
+
+> The resource group is a logical container. All DayBridge Azure resources live inside it.
+
+---
+
+### Part 3 — Azure Static Web App
+
+#### 3.1 Create the Static Web App
+
+Inside `web_apps_internal` resource group → **+ Create** → search **Static Web App** → **Create**
+
+**Basics tab:**
+
+| Field | Value |
+|-------|-------|
+| Subscription | WSD-DA2-Dev-Azure-Sub |
+| Resource group | `web_apps_internal` |
+| Name | `DayBridge` |
+| Plan type | Free |
+| Region | West Europe |
+
+**Deployment configuration tab:**
+
+| Field | Value |
+|-------|-------|
+| Deployment authorization policy | **Deployment token** |
+
+**Review + create** → **Create**
+
+> Azure will automatically commit a GitHub Actions workflow file to your connected repository and create a GitHub secret with the deployment token.
+
+#### 3.2 Configure Environment Variables
+
+Azure portal → DayBridge Static Web App → **Configuration** → **+ Add** each:
+
+| Name | Value | Used by |
+|------|-------|---------|
+| `CLAUDE_API_KEY` | `sk-ant-api03-...` | `/api/summarize` Azure Function |
+| `JIRA_TOKEN` | `ATATT3x...` | `/api/jira-tickets` Azure Function |
+| `JIRA_EMAIL` | `kobir.hosan@wsd.com` | `/api/jira-tickets` Azure Function |
+| `JIRA_BASE_URL` | `https://wallstreetdocs.atlassian.net` | `/api/jira-tickets` Azure Function |
+
+Click **Save** after adding all four.
+
+> These variables are only available to Azure Functions (`process.env.VAR_NAME`). They are never exposed to the browser.
+
+#### 3.3 Add Tags (optional but recommended)
+
+Azure portal → DayBridge → **Tags** → **+ Add**:
+
+| Name | Value |
+|------|-------|
+| `project` | `daybridge` |
+| `team` | `wsd-digital-workplace` |
+| `environment` | `production` |
+
+#### 3.4 Get the Deployment Token
+
+Azure portal → DayBridge → **Manage deployment token** → **Copy**
+
+Keep this token — you'll add it to GitHub secrets in Part 4.
+
+#### 3.5 Verify Routes (staticwebapp.config.json)
+
+The app ships with a pre-configured `staticwebapp.config.json` that:
+- Allows anonymous access to `/api/jira-tickets` and `/api/summarize`
+- Sets a Content-Security-Policy that allows Microsoft login domains
+- Redirects all unknown paths to `index.html` (SPA routing)
+
+```json
+{
+  "routes": [
+    { "route": "/api/jira-tickets", "allowedRoles": ["anonymous"] },
+    { "route": "/api/summarize",    "allowedRoles": ["anonymous"] }
+  ],
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/api/*", "/*.{css,js,json,ico,png,jpg,svg}"]
+  }
+}
+```
+
+---
+
+### Part 4 — GitHub Repository Setup
+
+#### 4.1 Create Repository
+
+**Via GitHub CLI (recommended):**
+
+```powershell
+# Install GitHub CLI if not already installed
+winget install --id GitHub.cli
+
+# Login
+gh auth login
+# Select: GitHub.com → HTTPS → authenticate via browser
+
+# Create repo and push
+cd d:\wsddashbordapp
+gh repo create Kobir-Bappy/DayBridge --private --source=. --remote=origin --push
+```
+
+**Via GitHub website:**
+
+1. Go to [github.com/new](https://github.com/new)
+2. Owner: `Kobir-Bappy` · Name: `DayBridge` · Private
+3. Do NOT initialise with README (project already has one)
+4. Click **Create repository**
+
+Then push from terminal:
+
+```powershell
+cd d:\wsddashbordapp
+git remote set-url origin https://github.com/Kobir-Bappy/DayBridge.git
+git push -u origin main
+```
+
+#### 4.2 Set Correct Git Identity for This Repo
+
+```powershell
+cd d:\wsddashbordapp
+git config user.name "Kobir-Bappy"
+git config user.email "kobir.hosan@wsd.com"
+```
+
+Verify:
+```powershell
+git config --list --local | findstr user
+# user.name=Kobir-Bappy
+# user.email=kobir.hosan@wsd.com
+```
+
+#### 4.3 Add GitHub Secret
+
+Repo → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**:
+
+| Name | Value |
+|------|-------|
+| `AZURE_STATIC_WEB_APPS_API_TOKEN_GENTLE_BUSH_0D4CEB603` | paste token from Azure portal (Step 3.4) |
+
+> If Azure auto-created this secret when connecting the repo, verify the value is not empty. If empty, paste the token from Step 3.4.
+
+#### 4.4 Switch Between Personal and Org Repo
+
+```powershell
+# Push to personal repo (Kobir-Bappy)
+git remote set-url origin https://github.com/Kobir-Bappy/DayBridge.git
+git push origin main
+
+# Push to org repo (wsd-team-digital-workplace)
+git remote set-url origin https://github.com/wsd-team-digital-workplace/DayBridge.git
+git push origin main
+```
+
+> Both repos need the same GitHub secret `AZURE_STATIC_WEB_APPS_API_TOKEN_GENTLE_BUSH_0D4CEB603` under their own Settings → Secrets.
+
+---
+
+### Part 5 — GitHub Actions CI/CD Pipeline
+
+#### 5.1 Workflow File
+
+The workflow file is automatically created by Azure at:
+`.github/workflows/azure-static-web-apps-gentle-bush-0d4ceb603.yml`
+
+Our customised version:
+
+```yaml
+name: Deploy DayBridge to Azure Static Web Apps
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches: [main]
+
+jobs:
+  build_and_deploy:
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    name: Build and Deploy
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: api/summarize/package-lock.json
+
+      - name: Install API dependencies
+        run: npm ci
+        working-directory: api/summarize
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_GENTLE_BUSH_0D4CEB603 }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: /
+          api_location: api
+          output_location: ""
+          skip_app_build: true   # plain HTML/JS — no build step needed
+
+  close_pull_request:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    name: Close Pull Request
+    steps:
+      - name: Close staging environment
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_GENTLE_BUSH_0D4CEB603 }}
+          action: close
+```
+
+#### 5.2 Key Configuration Decisions
+
+| Setting | Value | Why |
+|---------|-------|-----|
+| `skip_app_build: true` | true | App is plain HTML/CSS/JS — no npm build needed |
+| `api_location: api` | `api` | Deploys both `/api/summarize` and `/api/jira-tickets` Azure Functions |
+| `output_location: ""` | empty | Static files served from root, no build output folder |
+| `node-version: '20'` | 20 | Matches Azure Functions runtime |
+| `cache-dependency-path` | `api/summarize/package-lock.json` | Caches npm deps for the AI function |
+
+#### 5.3 Pipeline Flow
+
+```
+git push origin main
+        ↓
+GitHub Actions triggers
+        ↓
+actions/checkout@v4
+        ↓
+setup-node@v4 (Node 20, npm cache)
+        ↓
+npm ci (api/summarize only)
+        ↓
+Azure/static-web-apps-deploy@v1
+  ├── Uploads static files (index.html, app.js, styles.css, lib/, etc.)
+  ├── Deploys Azure Functions (api/summarize, api/jira-tickets)
+  └── skip_app_build: true (no Oryx build)
+        ↓
+Live at: https://gentle-bush-0d4ceb603.7.azurestaticapps.net
+```
+
+#### 5.4 Troubleshooting Common Pipeline Errors
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `JIRA_TOKEN not configured` | Env var not saved in Azure | Azure portal → Configuration → Save |
+| `No matching Static Web App found` | Wrong deployment token | Regenerate token in Azure → update GitHub secret |
+| `npm ci failed` | No `package-lock.json` | Run `npm install` in `api/summarize`, commit the lock file |
+| `Oryx build failed` | `skip_app_build: true` missing | Add it to the workflow `with:` block |
+| `interaction_in_progress` (login) | Popup-based auth conflict | Switch to `loginRedirect()` in auth.js |
+| `MSAL not loaded` | CDN blocked by CSP | Serve MSAL locally from `lib/msal-browser.min.js` |
+| Jira returns empty `issues: []` | API endpoint deprecated | Use `/rest/api/3/search/jql` not `/rest/api/3/search` |
+
+---
+
+### Part 6 — Jira API Setup
+
+#### 6.1 Generate Jira API Token
+
+1. Go to [id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
+2. Click **Create API token**
+3. Label: `DayBridge`
+4. Copy the token immediately — it won't be shown again
+
+#### 6.2 Add Token to Azure Configuration
+
+Azure portal → DayBridge → **Configuration** → **+ Add**:
+
+```
+JIRA_TOKEN = ATATT3x...your token here...
+```
+
+#### 6.3 Verify Jira Connection
+
+Visit this URL in your browser (replace with your email):
+```
+https://gentle-bush-0d4ceb603.7.azurestaticapps.net/api/jira-tickets?user=kobir.hosan@wsd.com
+```
+
+Expected response:
+```json
+{
+  "issues": [ {...}, {...} ],
+  "total": 9,
+  "queryUser": "kobir.hosan@wsd.com",
+  "authEmail": "kobir.hosan@wsd.com",
+  "error": null
+}
+```
+
+If `issues` is empty with no error — the email doesn't match any Jira assignee.
+If `error` is not null — check the JIRA_TOKEN value in Azure Configuration.
+
+---
+
+### Part 7 — Anthropic Claude API Setup
+
+#### 7.1 Get API Key
+
+1. Go to [console.anthropic.com](https://console.anthropic.com)
+2. Sign up or log in
+3. **API Keys** → **Create Key** → name it `DayBridge`
+4. Copy the key (shown once only)
+
+#### 7.2 Add to Azure Configuration
+
+Azure portal → DayBridge → **Configuration** → **+ Add**:
+
+```
+CLAUDE_API_KEY = sk-ant-api03-...your key here...
+```
+
+Click **Save**. The Azure Function restarts automatically and will use the key on next request.
+
+---
+
+### Full Setup Checklist
+
+```
+AZURE AD
+ ✓ App registration created — DayBridge
+ ✓ CLIENT_ID and TENANT_ID noted
+ ✓ Redirect URI added: https://gentle-bush-0d4ceb603.7.azurestaticapps.net
+ ✓ Graph permissions: User.Read, Mail.Read, Calendars.Read
+ ✓ Admin consent granted for WSD
+
+AZURE RESOURCE GROUP
+ ✓ Resource group: web_apps_internal (UK South / West Europe)
+
+AZURE STATIC WEB APP
+ ✓ Static Web App created: DayBridge
+ ✓ Deployment token copied
+ ✓ Environment variables set: CLAUDE_API_KEY, JIRA_TOKEN, JIRA_EMAIL, JIRA_BASE_URL
+
+GITHUB REPOSITORY
+ ✓ Repo created: Kobir-Bappy/DayBridge (private)
+ ✓ Also pushed to: wsd-team-digital-workplace/DayBridge
+ ✓ Secret added: AZURE_STATIC_WEB_APPS_API_TOKEN_GENTLE_BUSH_0D4CEB603
+ ✓ Git identity set: kobir.hosan@wsd.com
+
+GITHUB ACTIONS
+ ✓ Workflow file: azure-static-web-apps-gentle-bush-0d4ceb603.yml
+ ✓ skip_app_build: true
+ ✓ api_location: api
+ ✓ Node 20 with npm cache
+
+JIRA
+ ✓ API token generated at id.atlassian.com
+ ✓ Token added to Azure Configuration
+ ✓ Endpoint verified: /api/jira-tickets returns issues
+
+CLAUDE AI
+ ✓ API key created at console.anthropic.com
+ ✓ Key added to Azure Configuration
+ ✓ AI summary renders after sign-in
+
+LIVE APP
+ ✓ URL: https://gentle-bush-0d4ceb603.7.azurestaticapps.net
+ ✓ Sign-in works (redirect flow)
+ ✓ Jira tickets loading
+ ✓ Calendar and emails loading
+ ✓ AI summary generating
+```
