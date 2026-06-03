@@ -292,26 +292,37 @@ npm install
 cd api/summarize && npm install && cd ../..
 ```
 
-### 3. Create local env file
+### 3. How secrets are managed — important
 
-```bash
-cp .env.example .env
-```
+**The `.env` file is not used by the application at runtime** — not locally and not in production. It exists only as a personal reference so you remember what values are needed.
 
-Edit `.env` — **never commit this file**:
+Here is exactly where each value lives and why:
+
+| Value | Where it lives | Why |
+|-------|---------------|-----|
+| `CLIENT_ID` | Hardcoded in `auth.js` | Public SPA value — browsers must be able to read it. Not a secret. |
+| `TENANT_ID` | Hardcoded in `auth.js` | Public SPA value — same reason. Not a secret. |
+| `JIRA_TOKEN` | Azure portal → Configuration | Secret — only the Azure Function reads it via `process.env`. Never reaches the browser. |
+| `JIRA_EMAIL` | Azure portal → Configuration | Used by the Azure Function to authenticate with Jira Basic Auth. |
+| `JIRA_BASE_URL` | Azure portal → Configuration | Used by the Azure Function to construct Jira API URLs. |
+| `CLAUDE_API_KEY` | Azure portal → Configuration | Secret — only the Azure Function reads it. Never reaches the browser. |
+
+> **Security summary:** The only thing hardcoded in source code is `CLIENT_ID` and `TENANT_ID`. These are intentionally public — every Microsoft SPA exposes them. All actual secrets (`JIRA_TOKEN`, `CLAUDE_API_KEY`) live exclusively in Azure's encrypted Configuration store and are injected into Azure Functions at runtime via `process.env`. They never appear in any response sent to the browser.
+
+The `.env` file (if you create one locally) is blocked from git by `.gitignore`. It is purely for your own notes — the app does not read it.
 
 ```env
-# Azure AD App Registration (public values — safe in browser)
-CLIENT_ID=your-azure-ad-client-id
-TENANT_ID=your-azure-ad-tenant-id
+# .env — local reference only, NOT read by the app, NOT committed to git
+# These values are already hardcoded or set in Azure Configuration
 
-# Jira Cloud (used by Azure Function only — never in browser)
+CLIENT_ID=50575903-5945-4162-b6ad-8d9ad175034d   # hardcoded in auth.js
+TENANT_ID=a3be1280-7a3a-4edc-b258-0d6a539beee9   # hardcoded in auth.js
+
+# The values below must be set in Azure portal → DayBridge → Configuration
 JIRA_BASE_URL=https://wallstreetdocs.atlassian.net
-JIRA_EMAIL=you@wsd.com
-JIRA_TOKEN=your-jira-api-token
-
-# Anthropic Claude (Azure Function only)
-CLAUDE_API_KEY=sk-ant-...
+JIRA_EMAIL=kobir.hosan@wsd.com
+JIRA_TOKEN=your-jira-api-token-here
+CLAUDE_API_KEY=sk-ant-your-key-here
 ```
 
 ### 4. Start
@@ -439,16 +450,43 @@ git push origin main --force
 
 ## Environment Variables Reference
 
-| Variable | Location | Description |
-|----------|----------|-------------|
-| `CLIENT_ID` | Hardcoded in `auth.js` | Azure AD app client ID — public SPA value |
-| `TENANT_ID` | Hardcoded in `auth.js` | Azure AD tenant ID — public SPA value |
-| `JIRA_BASE_URL` | Azure portal Configuration | Jira Cloud base URL |
-| `JIRA_EMAIL` | Azure portal Configuration | Auth email for Jira Basic Auth |
-| `JIRA_TOKEN` | Azure portal Configuration | Jira API token — server-side only |
-| `CLAUDE_API_KEY` | Azure portal Configuration | Anthropic API key — server-side only |
+> **The `.env` file is not used by the application.** It is gitignored and exists only as a local reference. All runtime configuration comes from either hardcoded public values in source code or Azure's encrypted Configuration store.
 
-> **Jira token security:** The Jira token never reaches the browser. All Jira requests go through the `/api/jira-tickets` Azure Function which reads the token from `process.env.JIRA_TOKEN`.
+### What is hardcoded in source code (public, not secrets)
+
+| Variable | File | Value | Why hardcoded |
+|----------|------|-------|--------------|
+| `CLIENT_ID` | `auth.js` | `50575903-5945-4162-b6ad-8d9ad175034d` | Required in browser JS for MSAL. Public by design in all SPAs. |
+| `TENANT_ID` | `auth.js` | `a3be1280-7a3a-4edc-b258-0d6a539beee9` | Required in browser JS for MSAL. Public by design in all SPAs. |
+| `JIRA_BASE_URL` | `api/jira-tickets/index.js` | `https://wallstreetdocs.atlassian.net` | Default fallback in the Azure Function. |
+
+### What lives in Azure Configuration (secrets, server-side only)
+
+Set in: **Azure portal → DayBridge Static Web App → Configuration**
+
+| Variable | Used by | Never reaches browser? |
+|----------|---------|----------------------|
+| `JIRA_TOKEN` | `/api/jira-tickets` Azure Function → `process.env.JIRA_TOKEN` | ✅ Server-side only |
+| `JIRA_EMAIL` | `/api/jira-tickets` Azure Function → `process.env.JIRA_EMAIL` | ✅ Server-side only |
+| `JIRA_BASE_URL` | `/api/jira-tickets` Azure Function → `process.env.JIRA_BASE_URL` | ✅ Server-side only |
+| `CLAUDE_API_KEY` | `/api/summarize` Azure Function → `process.env.CLAUDE_API_KEY` | ✅ Server-side only |
+
+### Security model
+
+```
+Browser (public)                Azure Function (private)
+────────────────                ───────────────────────
+CLIENT_ID   ← hardcoded         JIRA_TOKEN    ← Azure Configuration
+TENANT_ID   ← hardcoded         JIRA_EMAIL    ← Azure Configuration
+                                JIRA_BASE_URL ← Azure Configuration
+                                CLAUDE_API_KEY← Azure Configuration
+                                      ↑
+                              process.env.VAR_NAME
+                              (injected at runtime,
+                               never in HTTP response)
+```
+
+The browser never sees `JIRA_TOKEN` or `CLAUDE_API_KEY`. Every Jira request goes through `/api/jira-tickets` and every AI request goes through `/api/summarize` — both are Azure Functions that read secrets from the server environment.
 
 ---
 
