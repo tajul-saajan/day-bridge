@@ -1,242 +1,82 @@
 # DayBridge
 
-> A unified productivity dashboard for WSD engineers — bringing together Jira tickets, Microsoft 365 calendar, and unread emails in one place, with AI-powered daily briefings and smart completion tracking.
+> A unified productivity dashboard for WSD — bringing together Jira tickets, Microsoft 365 calendar, and unread emails in one place, with AI-powered daily briefings, per-task completion likelihood, and a live productivity score.
 
-[![Deploy to Azure](https://github.com/wsd-team-digital-workplace/wsddashbordapp/actions/workflows/azure-static-web-apps.yml/badge.svg)](https://github.com/wsd-team-digital-workplace/wsddashbordapp/actions/workflows/azure-static-web-apps.yml)
+[![Deploy to Azure](https://github.com/Kobir-Bappy/DayBridge/actions/workflows/azure-static-web-apps-gentle-bush-0d4ceb603.yml/badge.svg)](https://github.com/Kobir-Bappy/DayBridge/actions/workflows/azure-static-web-apps-gentle-bush-0d4ceb603.yml)
 ![Azure Static Web Apps](https://img.shields.io/badge/Hosted%20on-Azure%20Static%20Web%20Apps-0078D4?logo=microsoftazure)
 ![Auth](https://img.shields.io/badge/Auth-Microsoft%20SSO-0078D4?logo=microsoft)
 ![AI](https://img.shields.io/badge/AI-Claude%20by%20Anthropic-7B61FF)
+
+**Live URL:** https://gentle-bush-0d4ceb603.7.azurestaticapps.net
 
 ---
 
 ## What is DayBridge?
 
-DayBridge is an internal productivity tool built for the WSD team. Instead of switching between Jira, Outlook, and your calendar all day, DayBridge pulls everything into a single clean dashboard and tells you — with the help of Claude AI — what to focus on right now.
-
-Open it in the morning, sign in with your Microsoft account, and within seconds you have:
-- Every Jira ticket assigned to you, sorted by urgency
-- Today's meetings with one-click join links
-- Your unread emails with sender and preview
-- An AI-written briefing that reads your task list and emails and tells you what to prioritise, what is blocked, and how to structure your day
-
-No configuration required for a first look — the app loads with realistic demo data the moment you open it.
+DayBridge is an internal productivity tool for WSD. Sign in with your Microsoft 365 account and get a single dashboard showing everything you need to focus on — Jira tickets, today's meetings, unread emails, and an AI briefing that tells you what to prioritise, what is blocked, and how your day looks.
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│  ● CMD CENTER        Tuesday, 2 June 2026          ↺ Sync   👤 Md. Kobir│
-├──────────┬──────────┬────────────────┬─────────────────────────────────┤
-│  7       │  2       │  4             │  6                              │
-│  Open    │  Done    │  Meetings      │  Unread Emails                  │
-│  Tickets │  Today   │  Today         │                                 │
-├──────────┴──────────┴────────────────┴─────────────────────────────────┤
-│ ✦ AI  WSD-112 is overdue — fix auth token bug first. WSD-108 and        │
-│       WSD-103 are due today with strong completion likelihood.           │
-├─────────────────────────────────────────────────────────────────────────┤
-│  Daily Productivity  ████████████████░░░░  74%  Productive              │
-│                      3 active · 1 overdue · 4 meetings                  │
-├───────────────────────────────────┬─────────────────────────────────────┤
-│  ● JIRA TICKETS — TODAY'S FOCUS   │  ● TODAY'S SCHEDULE                 │
-│  [All] [Critical] [High] [Medium] │                                     │
-│                                   │  09:00  Daily Standup         Teams │
-│  🔴 WSD-112  In Progress  ▓▓▓▓▓ 95%│  10:30  Design Review — CC v2  ●now│
-│  🟠 WSD-108  In Progress  ▓▓▓▓░ 87%│  14:00  1:1 with Sarah       Teams │
-│  🟠 WSD-105  In Review    ▓▓▓▓░ 80%│  15:30  Sprint Retrospective       │
-│  🟠 WSD-103  In Progress  ▓▓▓░░ 77%│                                     │
-│  🟡 WSD-99   To Do        ▓░░░░ 25%│                                     │
-├───────────────────────────────────┴─────────────────────────────────────┤
-│  ● UNREAD EMAILS                                                        │
-│  SC  Sarah Chen       Re: DayBridge demo — Thursday confirmed   6m │
-│  JA  Jira Automation  [WSD-112] Critical bug escalated              18m │
-│  AD  Azure DevOps     Pipeline cmd-center-main — Build #158 ✓       35m │
-└─────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ✓ DayBridge        Wednesday, 3 June 2026          Md. Kobir Hosan  Sign out│
+│  ● Connected  ↺ Refresh                                    Last updated 12:01│
+├──────────┬───────────┬─────────────────┬────────────────────────────────────┤
+│  9       │  0        │  5              │  10                                │
+│  Open    │  Done     │  Meetings       │  Unread Emails                     │
+│  Tickets │  Today    │  Today          │                                    │
+├──────────┴───────────┴─────────────────┴────────────────────────────────────┤
+│ ✦ AI SUMMARY                                                                │
+│  ⚠ Deployment pipeline broken    ⚠ Security alert: Defender                │
+│  ⚠ DW-944 stuck in Waiting       ⚠ DW-913 on hold                          │
+│                                                                              │
+│  Your DayBridge deployment has failed twice. Review Defender security        │
+│  alerts. 9 Jira tickets open including 4 onboarding tasks for June 1st.    │
+│                                                                              │
+│  ↑ Review security alerts   ↑ Fix CI/CD pipeline   ↑ Continue onboarding   │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  Daily Productivity  ██████████████████░░  85%  High Output                 │
+│                      7 active · 5 meetings                                  │
+├─────────────────────────────────┬────────────────┬──────────────────────────┤
+│  ● JIRA TICKETS — TODAY'S FOCUS │  ● SCHEDULE    │  ● UNREAD EMAILS        │
+│  [kobir.hosan@wsd.com]          │  Mon Tue Wed   │                         │
+│  [All][Critical][High][Medium] 9│  1   2  [3]    │  K Kobir-Bappy  Today   │
+│                                 │      ●  ●●●    │  [wsd-team-digital...]  │
+│  DW-974 Need Access for Cursor  │                │                         │
+│  IN PROGRESS  M  65%            │  TODAY         │  M Microsoft Defender   │
+│                                 │  01:30 Canceled│  Microsoft 365 Defende  │
+│  DW-944 Nagstamon Setup         │  Product & Tech│                         │
+│  WAITING  M  25%                │  Microsoft     │                         │
+└─────────────────────────────────┴────────────────┴──────────────────────────┘
 ```
 
 ---
 
 ## Features
 
-### 1. Microsoft Single Sign-On
-Sign in with your WSD Microsoft 365 account in one click. Authentication is handled by the Microsoft Authentication Library (MSAL) with silent token refresh — no passwords stored, no separate login to manage. Scopes requested: `User.Read`, `Mail.Read`, `Calendars.Read`.
+### 1. Microsoft Single Sign-On (Redirect-based)
+Sign in with your WSD Microsoft 365 account via a full-page redirect — no popup, no first-attempt failures. Uses MSAL with silent token refresh. After signing in, the app fetches all data automatically.
+
+**Scopes:** `User.Read` · `Mail.Read` · `Calendars.Read`
 
 ### 2. Live Stats Bar
-Four at-a-glance metrics always visible at the top of the page:
-- **Open Tickets** — count of your non-done Jira tasks
-- **Done Today** — tickets you closed today (motivating progress tracker)
-- **Meetings** — how many calendar events are scheduled today
-- **Unread Emails** — current unread count from your inbox
+Four at-a-glance metrics always visible:
+
+| Metric | Source |
+|--------|--------|
+| Open Tickets | Jira API — non-Done tickets assigned to you |
+| Done Today | Jira API — tickets with Done status |
+| Meetings | Microsoft Graph — calendar events today |
+| Unread Emails | Microsoft Graph — unread inbox count |
 
 ### 3. AI Priority Briefing (Powered by Claude)
-After your data loads, the app sends your task list and recent emails to a serverless Azure Function that calls the Anthropic Claude API. Claude reads everything and writes a 2–3 sentence briefing telling you:
-- What to work on first and why
-- Which tasks are likely to be completed today
-- Any blockers or urgent items flagged in your emails
+After data loads, a serverless Azure Function sends your tasks and emails to Anthropic's Claude API. The response is displayed as:
+- **Blocker chips** (red) — urgent issues and security alerts at the top
+- **Summary paragraph** — 2–3 sentence daily briefing
+- **Focus chips** (purple) — recommended priority order at the bottom
 
-The AI summary updates every time you refresh.
+Falls back to a stat summary (`9 tickets · 5 meetings · 10 emails`) if Claude is unavailable.
 
 ### 4. Daily Productivity Meter
-A live progress bar at the top of the dashboard scores your day from 0–100% based on how many tasks are active, how many are overdue, and how many meetings are scheduled. Labels range from **Slow Day** through **On Track**, **Productive**, to **Peak Performance**.
-
-### 5. Per-Task Completion Likelihood
-Every Jira ticket displays a colour-coded mini progress bar and percentage showing the probability of completing it today. The score is calculated from three signals:
-- **Status** — In Progress and In Review score higher than To Do
-- **Priority** — Highest/Critical tasks get an urgency boost
-- **Due date** — Due today or overdue lifts the score; due in 6+ days lowers it
-
-Green (≥70%) · Orange (40–69%) · Grey (<40%)
-
-### 6. Priority Filter Pills
-The Jira tasks panel has instant filter buttons — **All**, **Critical**, **High**, **Medium** — so you can focus on the tier that matters right now without leaving the page. The total ticket count in the badge always reflects your full backlog.
-
-### 7. Today's Calendar with Join Links
-All of today's calendar events are listed with start/end times and location. Events that are happening right now are highlighted in green. Online meetings show a clickable join button that opens your Teams or meeting URL directly.
-
-### 8. Unread Email Feed
-Your most recent unread emails are shown with sender avatar, subject, preview text, and relative time. Colour-coded avatars make senders easy to recognise at a glance.
-
-### 9. Demo Mode — No Sign-In Required
-The app loads instantly with realistic mock data so you can explore every feature before connecting any account. Click **Sign in with Microsoft** when you're ready to switch to your live data.
-
-### 10. Responsive & Fast
-Built with vanilla HTML, CSS, and JavaScript — no framework overhead. Loads in under a second. Fully responsive: two-column layout on desktop collapses to single-column on tablet and mobile.
-
----
-
-## Architecture
-
-```mermaid
-graph TB
-    subgraph Browser["🌐 Browser (Static Files)"]
-        HTML[index.html]
-        JS[app.js / auth.js / graph.js / jira.js]
-        CSS[styles.css]
-    end
-
-    subgraph Azure["☁️ Azure Static Web Apps"]
-        SWA[Static File Host]
-        FN["⚡ Azure Function\n/api/summarize"]
-    end
-
-    subgraph Auth["🔐 Identity"]
-        AAD[Azure Active Directory\nMSAL OAuth2]
-    end
-
-    subgraph APIs["🔌 External APIs"]
-        GRAPH[Microsoft Graph API\nEmails · Calendar · Profile]
-        JIRA[Jira REST API\nAssigned Tickets]
-        CLAUDE[Anthropic Claude API\nAI Summary]
-    end
-
-    Browser -->|HTTPS| SWA
-    SWA --> FN
-    JS -->|MSAL popup / silent| AAD
-    AAD -->|Access token| JS
-    JS -->|Bearer token| GRAPH
-    JS -->|Basic auth| JIRA
-    JS -->|POST /api/summarize| FN
-    FN -->|Anthropic SDK| CLAUDE
-```
-
----
-
-## Data Flow
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant App as app.js
-    participant MSAL as auth.js (MSAL)
-    participant AAD as Azure AD
-    participant Graph as Microsoft Graph
-    participant Jira as Jira API
-    participant Fn as Azure Function
-    participant Claude as Claude API
-
-    User->>App: Page load
-    App->>App: renderMockData() — demo mode
-    App->>MSAL: initAuth()
-    MSAL->>AAD: silent token refresh
-    AAD-->>MSAL: access token
-    MSAL-->>App: onLoginSuccess()
-
-    App->>App: showLoading()
-    par Parallel fetch
-        App->>Graph: fetchEmails(token)
-        Graph-->>App: raw emails
-    and
-        App->>Graph: fetchCalendarEvents(token)
-        Graph-->>App: raw events
-    and
-        App->>Jira: fetchMyJiraTickets()
-        Jira-->>App: raw tickets
-    end
-
-    App->>App: normalize + render tasks, calendar, emails
-    App->>App: updateProductivityMeter()
-    App->>Fn: POST /api/summarize {tasks, emails}
-    Fn->>Claude: claude.messages.create()
-    Claude-->>Fn: JSON summary + blockers
-    Fn-->>App: { summary, focusOrder, blockers }
-    App->>App: render AI banner
-    App->>App: hideLoading()
-```
-
----
-
-## Completion Likelihood Algorithm
-
-Each task receives a `% likely today` score shown as a colour-coded mini bar:
-
-```mermaid
-flowchart LR
-    T[Task] --> S{Status base score}
-    S -->|In Progress| B65[65]
-    S -->|In Review| B80[80]
-    S -->|To Do| B25[25]
-
-    B65 --> P{Priority modifier}
-    B80 --> P
-    B25 --> P
-
-    P -->|Highest / Blocker| P20[+20]
-    P -->|High| P12[+12]
-    P -->|Medium| P0[+0]
-    P -->|Low / Lowest| PM[−10 / −15]
-
-    P20 --> D{Due date modifier}
-    P12 --> D
-    P0 --> D
-    PM --> D
-
-    D -->|Overdue| D18[+18]
-    D -->|Due today| D22[+22]
-    D -->|Due tomorrow| D8[+8]
-    D -->|Due in 6+ days| DM[−8]
-    D -->|No due date| D0[+0]
-
-    D18 --> CAP["Clamp 5–95%"]
-    D22 --> CAP
-    D8 --> CAP
-    DM --> CAP
-    D0 --> CAP
-
-    CAP --> COLOUR{Score}
-    COLOUR -->|≥ 70%| GREEN["🟢 Green"]
-    COLOUR -->|40–69%| ORANGE["🟠 Orange"]
-    COLOUR -->|< 40%| GREY["⚫ Grey"]
-```
-
----
-
-## Daily Productivity Score
-
-The meter at the top of the dashboard is calculated from live task and calendar data:
-
-| Factor | Points |
-|--------|--------|
-| Base score | 40 |
-| Each active task (In Progress / Review) | +8 (max 25) |
-| Each overdue task | −10 |
-| Each calendar event today | +4 (max 20) |
+Live 0–100% score with label:
 
 | Score | Label |
 |-------|-------|
@@ -247,94 +87,234 @@ The meter at the top of the dashboard is calculated from live task and calendar 
 | 31–50 | Getting Started |
 | 0–30 | Slow Day |
 
+Calculated from: `40 base + (active tasks × 8, max 25) − (overdue × 10) + (meetings × 4, max 20)`
+
+### 5. Per-Task Completion Likelihood
+Each ticket shows a mini progress bar + % score:
+
+- **Base:** In Progress = 65, In Review = 80, To Do = 25
+- **Priority boost:** Highest/Blocker +20, High +12
+- **Due date:** Due today +22, overdue +18, due tomorrow +8, 6+ days away −8
+- **Colour:** Green ≥70% · Orange 40–69% · Grey <40%
+
+### 6. Priority Filter Pills
+**All · Critical · High · Medium** — filters the task list instantly. Badge always shows the total backlog count.
+
+### 7. Jira User Badge
+The tasks card header shows which email is being queried (`kobir.hosan@wsd.com`). If the Jira API returns an error (e.g. user not found), a red ⚠ badge appears instead — making it easy to diagnose multi-user issues.
+
+### 8. 3-Column Layout
+- **Left (wide):** Jira tickets with likelihood bars
+- **Centre:** Schedule card — weekly strip (Mon–Sun with event dots) + today's events below
+- **Right:** Email side panel (not at the bottom)
+
+### 9. Weekly Schedule Strip
+A compact 7-day view at the top of the Schedule card shows which days have events. Today is highlighted in blue. Event dots (green = currently happening) show load at a glance.
+
+### 10. Clickable Items
+- **Jira tickets** → open in Jira (`wallstreetdocs.atlassian.net/browse/...`)
+- **Meetings with Teams link** → open Teams join URL
+- **Emails** → open Outlook Web inbox
+
+---
+
+## Architecture
+
+```mermaid
+graph TB
+    subgraph Browser["🌐 Browser (Static Files — Azure SWA)"]
+        HTML[index.html]
+        JS[app.js · auth.js · graph.js · jira.js]
+        MSAL_LIB[lib/msal-browser.min.js]
+    end
+
+    subgraph AzureFunctions["⚡ Azure Functions"]
+        FN_AI[/api/summarize\nClaude AI briefing]
+        FN_JIRA[/api/jira-tickets\nJira proxy]
+    end
+
+    subgraph Identity["🔐 Microsoft Identity"]
+        AAD[Azure Active Directory\nMSAL Redirect OAuth2]
+    end
+
+    subgraph ExternalAPIs["🔌 External APIs"]
+        GRAPH[Microsoft Graph\nEmails · Calendar · Profile]
+        JIRA[Jira REST API\nwallstreetdocs.atlassian.net]
+        CLAUDE[Anthropic Claude API]
+    end
+
+    Browser -->|redirect login| AAD
+    AAD -->|redirect back + token| Browser
+    JS -->|Bearer token| GRAPH
+    JS -->|GET /api/jira-tickets?user=email| FN_JIRA
+    FN_JIRA -->|Basic Auth + JIRA_TOKEN| JIRA
+    JS -->|POST /api/summarize| FN_AI
+    FN_AI -->|CLAUDE_API_KEY| CLAUDE
+```
+
+---
+
+## Data Flow
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant App as Browser (app.js)
+    participant MSAL as auth.js (MSAL Redirect)
+    participant AAD as Azure AD
+    participant Graph as Microsoft Graph
+    participant JiraFn as Azure Fn /api/jira-tickets
+    participant Jira as Jira Cloud
+    participant AiFn as Azure Fn /api/summarize
+    participant Claude as Claude API
+
+    User->>App: Open app — empty state shown
+    App->>MSAL: initAuth() — check for redirect response
+    Note over MSAL: handleRedirectPromise()
+    alt No cached session
+        MSAL-->>App: no session found
+    else Cached session exists
+        MSAL-->>App: onLoginSuccess(account)
+    end
+
+    User->>MSAL: Click "Sign in with Microsoft"
+    MSAL->>AAD: loginRedirect() — full page redirect
+    User->>AAD: Select account + consent
+    AAD-->>App: Redirect back with auth code
+    App->>MSAL: initAuth() — handleRedirectPromise()
+    MSAL-->>App: onLoginSuccess(response)
+
+    App->>App: showLoading()
+    par Parallel fetch
+        App->>Graph: fetchEmails(token)
+        Graph-->>App: unread emails
+    and
+        App->>Graph: fetchCalendarEvents(token)
+        Graph-->>App: today's events
+    and
+        App->>Graph: fetchWeekCalendarEvents(token)
+        Graph-->>App: full week events
+    and
+        App->>JiraFn: GET /api/jira-tickets?user=email
+        JiraFn->>Jira: GET /rest/api/3/search/jql
+        Jira-->>JiraFn: issues array
+        JiraFn-->>App: { issues, queryUser, error }
+    end
+
+    App->>App: render all panels + update stats + productivity meter
+    App->>AiFn: POST /api/summarize { tasks, emails }
+    AiFn->>Claude: messages.create()
+    Claude-->>AiFn: { summary, focusOrder, blockers }
+    AiFn-->>App: JSON response
+    App->>App: render AI banner (blockers → text → focus chips)
+    App->>App: hideLoading()
+```
+
 ---
 
 ## CI/CD Pipeline
 
 ```mermaid
 flowchart TD
-    DEV[👨‍💻 Developer] -->|git push main| GH[GitHub Repository]
+    DEV[👨‍💻 Developer] -->|git push main| GH[GitHub: Kobir-Bappy/DayBridge]
     DEV -->|open Pull Request| PR[Pull Request]
 
-    GH -->|triggers| WF["⚙️ GitHub Actions\nazure-static-web-apps.yml"]
+    GH -->|triggers| WF["⚙️ GitHub Actions\nazure-static-web-apps-gentle-bush-0d4ceb603.yml"]
     PR -->|triggers| WF
 
     WF --> CHK[actions/checkout@v4]
-    CHK --> NODE[setup-node@v4\nNode 20 + npm cache]
-    NODE --> INST[npm ci\napi/summarize]
-    INST --> DEPLOY["Azure/static-web-apps-deploy@v1\nupload"]
+    CHK --> NODE[setup-node@v4 · Node 20 · npm cache]
+    NODE --> INST[npm ci in api/summarize]
+    INST --> DEPLOY["Azure/static-web-apps-deploy@v1\nskip_app_build: true"]
 
-    DEPLOY -->|main branch| PROD["🌐 Production\nhttps://your-app.azurestaticapps.net"]
-    DEPLOY -->|pull request| PREV["🔍 Preview URL\nhttps://your-app-pr-42.azurestaticapps.net"]
-
-    PR -->|closed| CLEAN["Azure/static-web-apps-deploy@v1\nclose — removes preview env"]
+    DEPLOY -->|main branch| PROD["🌐 Production\nhttps://gentle-bush-0d4ceb603.7.azurestaticapps.net"]
+    DEPLOY -->|pull request| PREV["🔍 Preview URL — auto-generated per PR"]
+    PR -->|closed| CLEAN[close action — removes preview environment]
 ```
+
+**GitHub secret required:**
+
+| Secret Name | Value |
+|-------------|-------|
+| `AZURE_STATIC_WEB_APPS_API_TOKEN_GENTLE_BUSH_0D4CEB603` | Deployment token from Azure portal |
 
 ---
 
 ## Project Structure
 
 ```
-wsddashbordapp/
-├── index.html                  # App shell — layout, section scaffolding
-├── app.js                      # Core logic: render, productivity meter, likelihood
-├── auth.js                     # MSAL authentication — login / token refresh
-├── graph.js                    # Microsoft Graph helpers — emails, calendar, profile
-├── jira.js                     # Jira REST API helpers — tickets, normalisation
-├── styles.css                  # Design system — variables, components, responsive
-├── staticwebapp.config.json    # Azure SWA routing + Content-Security-Policy
-├── package.json                # Frontend dev dependency (http-server)
-├── .env.example                # Required environment variable reference
+DayBridge/
+├── index.html                  # App shell — 3-column layout
+├── app.js                      # Core logic: render, stats, likelihood, weekly schedule
+├── auth.js                     # MSAL redirect auth — login / logout / token refresh
+├── graph.js                    # Microsoft Graph — emails, today + week calendar
+├── jira.js                     # Jira proxy client — calls /api/jira-tickets
+├── styles.css                  # Design system — variables, grid, components
+├── staticwebapp.config.json    # Azure SWA routing + CSP headers
+├── package.json                # Dev dependency: http-server
+├── .env.example                # Local environment variable template (no secrets)
+├── .gitignore                  # Excludes .env, node_modules
+├── lib/
+│   └── msal-browser.min.js     # MSAL served locally (avoids CDN/CSP issues)
 ├── api/
-│   └── summarize/
-│       ├── index.js            # Azure Function — calls Claude API, returns JSON
-│       ├── function.json       # Function binding (HTTP trigger)
-│       └── package.json        # @anthropic-ai/sdk dependency
+│   ├── summarize/
+│   │   ├── index.js            # Azure Function — Claude AI summary
+│   │   ├── function.json       # HTTP trigger binding
+│   │   └── package.json        # @anthropic-ai/sdk
+│   └── jira-tickets/
+│       ├── index.js            # Azure Function — Jira API proxy (keeps token server-side)
+│       └── function.json       # HTTP trigger binding
 └── .github/
     └── workflows/
-        └── azure-static-web-apps.yml  # GitHub Actions CI/CD
+        └── azure-static-web-apps-gentle-bush-0d4ceb603.yml  # GitHub Actions CI/CD
 ```
 
 ---
 
-## Getting Started (Local Dev)
+## Local Development
 
 ### Prerequisites
-
 - Node.js 20+
-- A Microsoft 365 account (or use demo mode — no sign-in required)
-- Optional: Jira Cloud account, Anthropic API key
+- Microsoft 365 account (or browse in demo mode without signing in)
+- Optional: Jira Cloud access, Anthropic API key
 
-### 1. Clone and install
+### 1. Clone
 
 ```bash
-git clone https://github.com/your-org/wsddashbordapp.git
-cd wsddashbordapp
+git clone https://github.com/Kobir-Bappy/DayBridge.git
+cd DayBridge
+```
+
+### 2. Install dependencies
+
+```bash
 npm install
 cd api/summarize && npm install && cd ../..
 ```
 
-### 2. Configure environment variables
+### 3. Create local env file
 
-Copy `.env.example` to `.env` and fill in your values:
+```bash
+cp .env.example .env
+```
+
+Edit `.env` — **never commit this file**:
 
 ```env
-# Azure AD app registration
+# Azure AD App Registration (public values — safe in browser)
 CLIENT_ID=your-azure-ad-client-id
-TENANT_ID=your-tenant-id
+TENANT_ID=your-azure-ad-tenant-id
 
-# Jira Cloud
-JIRA_BASE_URL=https://your-org.atlassian.net
-JIRA_EMAIL=you@company.com
+# Jira Cloud (used by Azure Function only — never in browser)
+JIRA_BASE_URL=https://wallstreetdocs.atlassian.net
+JIRA_EMAIL=you@wsd.com
 JIRA_TOKEN=your-jira-api-token
 
-# Claude API (Azure Function only — not exposed to browser)
+# Anthropic Claude (Azure Function only)
 CLAUDE_API_KEY=sk-ant-...
 ```
 
-> **Demo mode** — the app renders mock data immediately without any configuration. Sign-in and live data are optional.
-
-### 3. Run locally
+### 4. Start
 
 ```bash
 npm start
@@ -343,66 +323,146 @@ npm start
 
 ---
 
-## Deployment to Azure
+## Deployment to Azure — Step by Step
 
-### Step 1 — Create the Azure Static Web App
+### Step 1 — Create Resource Group
 
-1. [portal.azure.com](https://portal.azure.com) → **Create a resource** → **Static Web App**
-2. Configure:
-   - **Name:** `command-center` (or your choice)
-   - **Plan:** Free
-   - **Deployment source:** GitHub — select your repo + `main` branch
-   - **App location:** `/`
-   - **Api location:** `api`
-   - **Output location:** *(leave blank)*
-3. Click **Review + Create**
+Azure portal → **Resource groups** → **+ Create**
 
-### Step 2 — Copy the deployment token
+| Field | Value |
+|-------|-------|
+| Name | `web_apps_internal` |
+| Region | UK South (or nearest) |
 
-Azure portal → your Static Web App → **Manage deployment token** → copy.
+### Step 2 — Create Static Web App
 
-### Step 3 — Add GitHub secret
+Inside the resource group → **+ Create** → **Static Web App**
 
-Repo → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**:
+| Field | Value |
+|-------|-------|
+| Name | `DayBridge` |
+| Plan | Free |
+| Deployment source | GitHub |
+| Organization | `Kobir-Bappy` |
+| Repository | `DayBridge` |
+| Branch | `main` |
+| Deployment authorization | Deployment token |
+| App location | `/` |
+| Api location | `api` |
+| Output location | *(leave blank)* |
 
-| Name | Value |
-|------|-------|
-| `AZURE_STATIC_WEB_APPS_API_TOKEN` | paste token from Step 2 |
+Click **Review + create** → **Create**.
 
-### Step 4 — Add Claude API key to Azure
+Azure automatically commits a workflow file to the repo and creates a GitHub secret with the deployment token.
 
-Azure portal → your Static Web App → **Configuration** → **+ Add**:
+### Step 3 — Verify GitHub secret
 
-| Name | Value |
-|------|-------|
-| `CLAUDE_API_KEY` | your Anthropic API key |
+Repo → **Settings** → **Secrets and variables** → **Actions**
 
-### Step 5 — Push to deploy
+Confirm this secret exists (auto-created by Azure):
+
+```
+AZURE_STATIC_WEB_APPS_API_TOKEN_GENTLE_BUSH_0D4CEB603
+```
+
+If the value is empty, go to Azure portal → DayBridge → **Manage deployment token** → copy and paste it.
+
+### Step 4 — Add environment variables to Azure
+
+Azure portal → DayBridge Static Web App → **Configuration** → **+ Add**:
+
+| Name | Value | Used by |
+|------|-------|---------|
+| `CLAUDE_API_KEY` | `sk-ant-...` | Azure Function `/api/summarize` |
+| `JIRA_TOKEN` | your Jira API token | Azure Function `/api/jira-tickets` |
+| `JIRA_EMAIL` | `kobir.hosan@wsd.com` | Azure Function `/api/jira-tickets` |
+| `JIRA_BASE_URL` | `https://wallstreetdocs.atlassian.net` | Azure Function `/api/jira-tickets` |
+
+Click **Save**.
+
+> **Important:** `CLIENT_ID` and `TENANT_ID` do NOT go here — they are already hardcoded in `auth.js` (they are public SPA values, not secrets).
+
+### Step 5 — Add redirect URI to Azure AD
+
+Azure portal → **Azure Active Directory** → **App registrations** → DayBridge → **Authentication** → **Single-page application** → **Add URI**:
+
+```
+https://gentle-bush-0d4ceb603.7.azurestaticapps.net
+```
+
+Click **Save**, then click **Grant admin consent for WSD**.
+
+### Step 6 — Push to deploy
 
 ```bash
+git add .
+git commit -m "initial deployment"
 git push origin main
 ```
 
-GitHub Actions deploys automatically. Your app goes live at:
+GitHub Actions runs automatically. Monitor progress:
+`github.com/Kobir-Bappy/DayBridge/actions`
 
-```
-https://<your-app-name>.azurestaticapps.net
+---
+
+## Git Remote — Switch Between Repos
+
+The repo can be pushed to either the WSD org or your personal account:
+
+```bash
+# Check current remote
+git remote -v
+
+# Switch to personal repo
+git remote set-url origin https://github.com/Kobir-Bappy/DayBridge.git
+
+# Switch to org repo
+git remote set-url origin https://github.com/wsd-team-digital-workplace/DayBridge.git
+
+# Verify
+git remote -v
 ```
 
-Pull requests automatically receive a **preview URL** and are cleaned up when the PR is closed.
+If push is rejected (remote has newer commits):
+```bash
+git pull origin main --rebase
+# resolve any conflicts, then:
+git push origin main
+```
+
+If still rejected and you're sure your local is correct:
+```bash
+git push origin main --force
+```
 
 ---
 
 ## Environment Variables Reference
 
-| Variable | Where used | Description |
-|----------|-----------|-------------|
-| `CLIENT_ID` | Browser (`auth.js`) | Azure AD app registration client ID |
-| `TENANT_ID` | Browser (`auth.js`) | Azure AD tenant ID |
-| `JIRA_BASE_URL` | Browser (`jira.js`) | Your Jira Cloud base URL |
-| `JIRA_EMAIL` | Browser (`jira.js`) | Jira account email for basic auth |
-| `JIRA_TOKEN` | Browser (`jira.js`) | Jira API token |
-| `CLAUDE_API_KEY` | Azure Function only | Anthropic API key — never sent to browser |
+| Variable | Location | Description |
+|----------|----------|-------------|
+| `CLIENT_ID` | Hardcoded in `auth.js` | Azure AD app client ID — public SPA value |
+| `TENANT_ID` | Hardcoded in `auth.js` | Azure AD tenant ID — public SPA value |
+| `JIRA_BASE_URL` | Azure portal Configuration | Jira Cloud base URL |
+| `JIRA_EMAIL` | Azure portal Configuration | Auth email for Jira Basic Auth |
+| `JIRA_TOKEN` | Azure portal Configuration | Jira API token — server-side only |
+| `CLAUDE_API_KEY` | Azure portal Configuration | Anthropic API key — server-side only |
+
+> **Jira token security:** The Jira token never reaches the browser. All Jira requests go through the `/api/jira-tickets` Azure Function which reads the token from `process.env.JIRA_TOKEN`.
+
+---
+
+## Azure AD Permissions Required
+
+App registration → **API permissions** → **Microsoft Graph** → **Delegated**:
+
+| Permission | Purpose |
+|-----------|---------|
+| `User.Read` | Get signed-in user's name for the header |
+| `Mail.Read` | Fetch unread emails |
+| `Calendars.Read` | Fetch today's and this week's calendar events |
+
+After adding, click **Grant admin consent for WSD** (requires global admin).
 
 ---
 
@@ -410,11 +470,12 @@ Pull requests automatically receive a **preview URL** and are cleaned up when th
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Vanilla JS · HTML5 · CSS3 |
-| Authentication | MSAL (Microsoft Authentication Library) |
+| Frontend | Vanilla JS · HTML5 · CSS3 (no framework) |
+| Authentication | MSAL Browser v2 (redirect flow) |
 | Email & Calendar | Microsoft Graph API |
-| Task tracking | Jira REST API |
-| AI Summaries | Anthropic Claude (via Azure Function) |
-| Hosting | Azure Static Web Apps |
-| Serverless API | Azure Functions (Node.js) |
+| Task tracking | Jira REST API v3 (`/rest/api/3/search/jql`) |
+| Jira security | Azure Function proxy — token never in browser |
+| AI Summaries | Anthropic Claude via Azure Function |
+| Hosting | Azure Static Web Apps (Free tier) |
+| Serverless API | Azure Functions (Node.js, CommonJS) |
 | CI/CD | GitHub Actions |

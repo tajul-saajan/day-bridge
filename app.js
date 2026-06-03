@@ -86,7 +86,7 @@ async function loadLiveData(userEmail) {
       'Last updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     // AI summary â€” show stat fallback if Claude unavailable
-    updateLoadingText('Getting AI summaryâ€¦');
+    updateLoadingText('Getting AI summary');
     try {
       await loadAiSummary(tickets, emails.slice(0, 5));
     } catch (err) {
