@@ -25,6 +25,20 @@ test('happy path returns 200 with issues', async () => {
   restore();
 });
 
+test('query includes Done-today and a higher result cap', async () => {
+  withToken();
+  stubAuthValid();
+  let calledUrl = '';
+  http.setRequestJson(async (url) => { calledUrl = url; return { issues: [], total: 0 }; });
+  const ctx = makeContext();
+  await jira(ctx, makeReq({ query: { user: 'test.user@wsd.com' } }));
+  const jql = decodeURIComponent(calledUrl);
+  assert.ok(jql.includes('statusCategory != Done'), 'keeps active tickets');
+  assert.ok(jql.includes('statusCategoryChangedDate >= startOfDay()'), 'includes Done today');
+  assert.ok(calledUrl.includes('maxResults=50'), 'raised result cap');
+  restore();
+});
+
 test('JQL injection in user param is rejected with 400', async () => {
   withToken();
   stubAuthValid();
