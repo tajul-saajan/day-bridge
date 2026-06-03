@@ -95,52 +95,50 @@ body {
 /* ─── Main ────────────────────────────────────────────────────── */
 .main { padding: 24px; max-width: 1400px; margin: 0 auto; }
 
-/* ─── AI Summary Strip ───────────────────────────────────────── */
-.ai-strip {
+/* ─── AI Summary Banner ──────────────────────────────────────── */
+.ai-banner {
   background: var(--surface);
   border: 1px solid #d8d0ff;
   border-radius: var(--radius);
-  padding: 12px 16px;
-  display: flex; align-items: flex-start; gap: 12px;
-  margin-bottom: 12px;
+  padding: 14px 18px;
+  display: flex; flex-direction: column; gap: 10px;
+  margin-bottom: 16px;
   box-shadow: var(--shadow-sm);
 }
-.ai-strip-icon {
-  width: 28px; height: 28px; flex-shrink: 0; margin-top: 2px;
+.ai-banner-header {
+  display: flex; align-items: center; gap: 8px;
+}
+.ai-banner-icon {
+  width: 26px; height: 26px; flex-shrink: 0;
   background: var(--purple-light); border-radius: 6px;
   display: flex; align-items: center; justify-content: center;
 }
-.ai-strip-body    { flex: 1; min-width: 0; }
-.ai-strip-header-row {
-  display: flex; align-items: center; gap: 10px;
-  margin-bottom: 4px; flex-wrap: wrap;
-}
-.ai-strip-label {
+.ai-banner-label {
   font-size: 11px; font-weight: 700; color: var(--purple);
-  text-transform: uppercase; letter-spacing: .5px; white-space: nowrap;
+  text-transform: uppercase; letter-spacing: .5px;
 }
-.ai-strip-text {
-  font-size: 13px; color: var(--text-primary); line-height: 1.5; margin: 0;
-}
-.ai-focus-items {
-  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
-}
-.ai-focus-chip {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 3px 10px; border-radius: 20px;
-  font-size: 11px; font-weight: 600;
-  background: var(--purple-light); color: var(--purple);
-  white-space: nowrap;
+.ai-banner-text {
+  font-size: 13px; color: var(--text-primary);
+  line-height: 1.6; margin: 0;
 }
 .ai-blocker-chips {
   display: flex; flex-wrap: wrap; gap: 6px;
 }
 .ai-blocker-chip {
-  display: inline-flex; align-items: center;
-  padding: 2px 8px; border-radius: 20px;
-  font-size: 11px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 6px;
+  font-size: 12px; font-weight: 500;
   background: var(--red-light); color: var(--red);
-  white-space: nowrap;
+  border-left: 3px solid var(--red);
+}
+.ai-focus-items {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.ai-focus-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 12px; border-radius: 20px;
+  font-size: 12px; font-weight: 500;
+  background: var(--purple-light); color: var(--purple);
 }
 
 /* ─── Stats Bar ─────────────────────────────────────────────── */
