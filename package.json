@@ -4,7 +4,9 @@
   "description": "DayBridge — WSD productivity dashboard with Jira, Microsoft Graph, and AI daily briefings",
   "scripts": {
     "start": "npx http-server . -p 3000 -c-1 --cors",
-    "install:api": "cd api/summarize && npm install"
+    "install:api": "cd api && npm install",
+    "test": "cd api && node --test test/",
+    "build": "make build"
   },
   "devDependencies": {
     "http-server": "^14.1.1"

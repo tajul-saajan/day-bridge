@@ -7,6 +7,10 @@
     {
       "route": "/api/summarize",
       "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/health",
+      "allowedRoles": ["anonymous"]
     }
   ],
   "navigationFallback": {
@@ -16,7 +20,7 @@
   "globalHeaders": {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "SAMEORIGIN",
-    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https://login.microsoftonline.com https://*.login.microsoftonline.com https://login.microsoft.com https://graph.microsoft.com https://*.atlassian.net; frame-src 'self' https://login.microsoftonline.com https://*.login.microsoftonline.com; img-src 'self' data: https://graph.microsoft.com; style-src 'self' 'unsafe-inline'"
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; connect-src 'self' https://login.microsoftonline.com https://*.login.microsoftonline.com https://login.microsoft.com https://graph.microsoft.com https://*.atlassian.net; frame-src 'self' https://login.microsoftonline.com https://*.login.microsoftonline.com; img-src 'self' data: https://graph.microsoft.com; style-src 'self' 'unsafe-inline'"
   },
   "mimeTypes": {
     ".json": "application/json"

@@ -20,14 +20,14 @@
     </div>
     <div class="header-right">
       <div id="dateDisplay" class="date-display"></div>
-      <button id="loginBtn" class="btn btn-primary" onclick="handleLogin()">
+      <button id="loginBtn" class="btn btn-primary">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1a4 4 0 1 1 0 8A4 4 0 0 1 8 1zm0 9c-4.42 0-7 2.24-7 3.5V15h14v-1.5C15 12.24 12.42 10 8 10z" fill="currentColor"/></svg>
         Sign in with Microsoft
       </button>
       <div id="userInfo" class="user-info hidden">
         <div class="user-avatar" id="userAvatar">U</div>
         <span id="userName" class="user-name"></span>
-        <button class="btn btn-ghost" onclick="handleLogout()">Sign out</button>
+        <button id="logoutBtn" class="btn btn-ghost">Sign out</button>
       </div>
     </div>
   </header>
@@ -38,7 +38,7 @@
       <span class="status-dot online"></span>
       <span id="statusText">Connected</span>
     </div>
-    <button class="btn btn-ghost btn-sm" onclick="loadLiveData()">
+    <button id="refreshBtn" class="btn btn-ghost btn-sm">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7a6 6 0 1 0 2-4.47" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M1 2v3h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Refresh
     </button>
@@ -128,10 +128,10 @@
           <div class="card-header-right">
             <div id="jiraUserBadge"></div>
             <div class="filter-pills">
-              <button class="filter-pill active" data-filter="all"      onclick="filterTasks('all')">All</button>
-              <button class="filter-pill"        data-filter="critical" onclick="filterTasks('critical')">Critical</button>
-              <button class="filter-pill"        data-filter="high"     onclick="filterTasks('high')">High</button>
-              <button class="filter-pill"        data-filter="medium"   onclick="filterTasks('medium')">Medium</button>
+              <button class="filter-pill active" data-filter="all">All</button>
+              <button class="filter-pill"        data-filter="critical">Critical</button>
+              <button class="filter-pill"        data-filter="high">High</button>
+              <button class="filter-pill"        data-filter="medium">Medium</button>
             </div>
             <span id="taskCount" class="badge badge-blue">0</span>
           </div>

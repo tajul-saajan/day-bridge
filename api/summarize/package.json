@@ -1,7 +1,0 @@
-{
-  "name": "command-center-api",
-  "version": "1.0.0",
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.30.0"
-  }
-}
