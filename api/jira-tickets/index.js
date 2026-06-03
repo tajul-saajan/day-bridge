@@ -19,7 +19,7 @@ module.exports = async function (context, req) {
     `assignee = "${queryUser}" AND statusCategory != Done ORDER BY priority ASC, due ASC`
   );
   const fields = 'summary,priority,status,duedate,issuetype,assignee';
-  const url    = `${baseUrl}/rest/api/3/search?jql=${jql}&fields=${fields}&maxResults=20`;
+  const url    = `${baseUrl}/rest/api/3/search/jql?jql=${jql}&fields=${fields}&maxResults=20`;
 
   try {
     const data = await httpGet(url, {
