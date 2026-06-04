@@ -19,7 +19,7 @@ const msalConfig = {
   },
 };
 
-const LOGIN_SCOPES = ['User.Read', 'Mail.Read', 'Calendars.Read'];
+const LOGIN_SCOPES = ['User.Read', 'Mail.Read', 'Calendars.Read', 'Chat.Read'];
 
 let msalInstance   = null;
 let currentAccount = null;

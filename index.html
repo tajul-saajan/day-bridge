@@ -24,6 +24,20 @@
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1a4 4 0 1 1 0 8A4 4 0 0 1 8 1zm0 9c-4.42 0-7 2.24-7 3.5V15h14v-1.5C15 12.24 12.42 10 8 10z" fill="currentColor"/></svg>
         Sign in with Microsoft
       </button>
+      <div id="notifWrapper" class="notif-wrapper hidden">
+        <button id="notifBtn" class="btn btn-ghost notif-btn" onclick="Notif.toggle()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span id="notifBadge" class="notif-badge hidden">0</span>
+        </button>
+        <div id="notifDropdown" class="notif-dropdown hidden">
+          <div class="notif-dropdown-header">
+            <span>Notifications</span>
+            <button class="btn btn-ghost btn-sm" onclick="Notif.markRead()">Mark all read</button>
+          </div>
+          <div id="notifList" class="notif-list"></div>
+        </div>
+      </div>
+
       <div id="userInfo" class="user-info hidden">
         <div class="user-avatar" id="userAvatar">U</div>
         <span id="userName" class="user-name"></span>
@@ -31,6 +45,14 @@
       </div>
     </div>
   </header>
+
+  <!-- Notification permission banner -->
+  <div id="notifPermBanner" class="notif-perm-banner hidden">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    Enable desktop notifications for email, Jira and Teams alerts with sound
+    <button class="btn btn-primary btn-sm" onclick="Notif.requestPermission()">Enable</button>
+    <button class="btn btn-ghost btn-sm" onclick="this.closest('.notif-perm-banner').classList.add('hidden')">Dismiss</button>
+  </div>
 
   <!-- Status Bar -->
   <div id="statusBar" class="status-bar hidden">
@@ -171,6 +193,19 @@
       </section>
 
     </div>
+
+    <!-- Teams Chat Panel -->
+    <section class="card teams-card" id="teamsCard">
+      <div class="card-header">
+        <div class="card-title focus-title">
+          <span class="focus-dot" style="background:#6264a7"></span>
+          <span>Teams Messages</span>
+        </div>
+        <span id="teamsCount" class="badge" style="background:#ebebf5;color:#6264a7">0</span>
+      </div>
+      <div id="teamsList" class="teams-list"></div>
+    </section>
+
   </main>
 
   <!-- Loading Overlay -->
@@ -184,6 +219,7 @@
   <script src="auth.js"></script>
   <script src="graph.js"></script>
   <script src="jira.js"></script>
+  <script src="notifications.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

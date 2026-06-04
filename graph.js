@@ -60,6 +60,31 @@ async function fetchCalendarEvents(accessToken) {
   return data.value || [];
 }
 
+async function fetchTeamsChats(accessToken) {
+  try {
+    const url = `${GRAPH}/me/chats?$expand=lastMessagePreview&$top=8` +
+      `&$select=id,topic,chatType,lastUpdatedDateTime`;
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) return [];   // gracefully skip if Chat.Read not granted
+    const data = await res.json();
+    return data.value || [];
+  } catch { return []; }
+}
+
+function normalizeTeamsChats(raw) {
+  return raw.map(c => ({
+    id:          c.id,
+    topic:       c.topic || (c.chatType === 'oneOnOne' ? 'Direct Message' : 'Group Chat'),
+    chatType:    c.chatType,
+    lastMessage: (c.lastMessagePreview?.body?.content || '')
+      .replace(/<[^>]+>/g, '').trim(),
+    lastSender:  c.lastMessagePreview?.from?.user?.displayName || '',
+    lastUpdated: new Date(c.lastUpdatedDateTime),
+  }));
+}
+
 async function fetchUserProfile(accessToken) {
   const res = await fetch(`${GRAPH}/me?$select=displayName,mail,jobTitle`, {
     headers: { Authorization: `Bearer ${accessToken}` },

@@ -4,12 +4,17 @@ const AVATAR_COLORS = ['#0078D4','#0052CC','#7B61FF','#0e7a3c','#c25000','#d92b3
 // Task filter state
 let _allTasks     = [];
 let _activeFilter = 'all';
-
+let _refreshTimer = null;
+let _currentEmail = '';
 
 document.addEventListener('DOMContentLoaded', async () => {
   setDateDisplay();
-  renderMockData();   // show demo data immediately â€” presentable without sign-in
+  renderMockData();
   initAuth().catch(console.warn);
+  // Show notification permission banner if not yet decided
+  if ('Notification' in window && Notification.permission === 'default') {
+    document.getElementById('notifPermBanner')?.classList.remove('hidden');
+  }
 });
 
 function setDateDisplay() {
@@ -22,18 +27,27 @@ function setDateDisplay() {
 function onLoginSuccess(response) {
   const name  = response.account?.name     || response.account?.username || 'User';
   const email = response.account?.username || '';
+  _currentEmail = email;
   document.getElementById('loginBtn').classList.add('hidden');
   document.getElementById('userInfo').classList.remove('hidden');
+  document.getElementById('notifWrapper').classList.remove('hidden');
   document.getElementById('userName').textContent = name;
   document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
   document.getElementById('statusBar').classList.remove('hidden');
   loadLiveData(email);
+  // Auto-refresh every 2 minutes to detect new emails/tickets/messages
+  if (_refreshTimer) clearInterval(_refreshTimer);
+  _refreshTimer = setInterval(() => loadLiveData(_currentEmail), 2 * 60 * 1000);
 }
 
 function onLogoutSuccess() {
+  if (_refreshTimer) { clearInterval(_refreshTimer); _refreshTimer = null; }
+  _currentEmail = '';
   document.getElementById('loginBtn').classList.remove('hidden');
   document.getElementById('userInfo').classList.add('hidden');
+  document.getElementById('notifWrapper').classList.add('hidden');
   document.getElementById('statusBar').classList.add('hidden');
+  document.getElementById('teamsCard').classList.add('hidden');
   renderMockData();
 }
 
@@ -43,11 +57,12 @@ async function loadLiveData(userEmail) {
     const token = await getAccessToken();
 
     updateLoadingText('Loading emails, calendar, and tasks');
-    const [rawEmails, rawEvents, rawWeekEvents, rawTickets] = await Promise.allSettled([
+    const [rawEmails, rawEvents, rawWeekEvents, rawTickets, rawTeams] = await Promise.allSettled([
       fetchEmails(token),
       fetchCalendarEvents(token),
       fetchWeekCalendarEvents(token),
       fetchMyJiraTickets(userEmail),
+      fetchTeamsChats(token),
     ]);
 
     const emails     = rawEmails.status     === 'fulfilled' ? normalizeEmails(rawEmails.value)     : [];
@@ -63,17 +78,23 @@ async function loadLiveData(userEmail) {
       jiraError     = jiraResult.error     || null;
     }
 
-    if (rawEmails.status     === 'rejected') console.warn('Emails:',         rawEmails.reason);
-    if (rawEvents.status     === 'rejected') console.warn('Calendar:',       rawEvents.reason);
-    if (rawWeekEvents.status === 'rejected') console.warn('Week calendar:',  rawWeekEvents.reason);
-    if (rawTickets.status    === 'rejected') console.warn('Jira:',           rawTickets.reason);
+    const teamsChats = rawTeams.status === 'fulfilled' ? normalizeTeamsChats(rawTeams.value) : [];
+
+    if (rawEmails.status     === 'rejected') console.warn('Emails:',        rawEmails.reason);
+    if (rawEvents.status     === 'rejected') console.warn('Calendar:',      rawEvents.reason);
+    if (rawWeekEvents.status === 'rejected') console.warn('Week calendar:', rawWeekEvents.reason);
+    if (rawTickets.status    === 'rejected') console.warn('Jira:',          rawTickets.reason);
 
     renderTasks(tickets, jiraQueryUser, jiraError);
     renderCalendar(events);
     renderEmails(emails);
     renderWeeklySchedule(weekEvents);
+    renderTeamsChats(teamsChats);
     updateStats(tickets, events.length, emails.length);
     updateProductivityMeter(tickets, events.length);
+
+    // Fire notifications for new items since last check
+    Notif.check(emails.length, tickets.length, teamsChats.length);
 
     document.getElementById('lastUpdated').textContent =
       'Last updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -94,7 +115,7 @@ async function loadLiveData(userEmail) {
     console.error('loadLiveData:', err);
     const dot = document.querySelector('.status-dot');
     if (dot) { dot.className = 'status-dot offline'; }
-    document.getElementById('statusText').textContent = 'Error â€” using demo data';
+    document.getElementById('statusText').textContent = 'Error - using demo data';
   } finally {
     hideLoading();
   }
@@ -116,14 +137,14 @@ async function loadAiSummary(tasks, emails) {
     const el = document.getElementById('aiFocusItems');
     el.classList.remove('hidden');
     el.innerHTML = ai.focusOrder.map(item =>
-      `<span class="ai-focus-chip">  ${escHtml(String(item))}</span>`
+      `<span class="ai-focus-chip">&#8593; ${escHtml(String(item))}</span>`
     ).join('');
   }
   if (ai.blockers?.length) {
     const el = document.getElementById('aiBlockers');
     el.classList.remove('hidden');
     el.innerHTML = ai.blockers.map(b =>
-      `<span class="ai-blocker-chip">  ${escHtml(String(b))}</span>`
+      `<span class="ai-blocker-chip">&#9888; ${escHtml(String(b))}</span>`
     ).join('');
   }
 }
@@ -144,7 +165,7 @@ function _renderJiraUserBadge() {
   const badge = document.getElementById('jiraUserBadge');
   if (!badge) return;
   if (_jiraError) {
-    badge.innerHTML = `<span class="jira-user-badge jira-user-error" title="${escHtml(_jiraError)}">  Jira error</span>`;
+    badge.innerHTML = `<span class="jira-user-badge jira-user-error" title="${escHtml(_jiraError)}">&#9888; Jira error</span>`;
   } else if (_jiraQueryUser) {
     badge.innerHTML = `<span class="jira-user-badge" title="Fetching tickets assigned to ${escHtml(_jiraQueryUser)}">
       <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M8 1a4 4 0 1 1 0 8A4 4 0 0 1 8 1zm0 9c-4.42 0-7 2.24-7 3.5V15h14v-1.5C15 12.24 12.42 10 8 10z" fill="currentColor"/></svg>
@@ -268,6 +289,39 @@ function renderEmails(emails) {
         </div>
         <div class="email-subject">${escHtml(e.subject)}</div>
         <div class="email-preview">${escHtml(e.preview)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+
+// --- Render - Teams Chats ------------------------------------------------
+
+function renderTeamsChats(chats) {
+  const card  = document.getElementById('teamsCard');
+  const list  = document.getElementById('teamsList');
+  const count = document.getElementById('teamsCount');
+  if (!list) return;
+
+  if (!chats.length) { card?.classList.add('hidden'); return; }
+  card?.classList.remove('hidden');
+  if (count) count.textContent = chats.length;
+
+  list.innerHTML = chats.map(c => {
+    const time     = formatDate(c.lastUpdated);
+    const initials = c.lastSender
+      ? c.lastSender.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+      : 'T';
+    return `
+    <div class="teams-item" onclick="window.open('https://teams.microsoft.com','_blank')">
+      <div class="teams-avatar">${escHtml(initials)}</div>
+      <div class="teams-body">
+        <div class="teams-row1">
+          <span class="teams-topic">${escHtml(c.topic)}</span>
+          <span class="teams-time">${time}</span>
+        </div>
+        ${c.lastSender ? `<div class="teams-sender">${escHtml(c.lastSender)}</div>` : ''}
+        <div class="teams-preview">${escHtml(c.lastMessage)}</div>
       </div>
     </div>`;
   }).join('');
