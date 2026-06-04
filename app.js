@@ -57,12 +57,14 @@ async function loadLiveData(userEmail) {
     const token = await getAccessToken();
 
     updateLoadingText('Loading emails, calendar, and tasks');
+    const teamsToken = await getTeamsToken();  // null if Chat.Read not consented yet
+
     const [rawEmails, rawEvents, rawWeekEvents, rawTickets, rawTeams] = await Promise.allSettled([
       fetchEmails(token),
       fetchCalendarEvents(token),
       fetchWeekCalendarEvents(token),
       fetchMyJiraTickets(userEmail),
-      fetchTeamsChats(token),
+      teamsToken ? fetchTeamsChats(teamsToken) : Promise.resolve([]),
     ]);
 
     const emails     = rawEmails.status     === 'fulfilled' ? normalizeEmails(rawEmails.value)     : [];

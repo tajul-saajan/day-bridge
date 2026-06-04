@@ -19,7 +19,8 @@ const msalConfig = {
   },
 };
 
-const LOGIN_SCOPES = ['User.Read', 'Mail.Read', 'Calendars.Read', 'Chat.Read'];
+const LOGIN_SCOPES        = ['User.Read', 'Mail.Read', 'Calendars.Read'];
+const TEAMS_SCOPES        = ['Chat.Read'];   // requires admin consent — requested separately
 
 let msalInstance   = null;
 let currentAccount = null;
@@ -75,6 +76,22 @@ async function getAccessToken() {
   } catch {
     // Silent failed — redirect to get a fresh token
     await instance.acquireTokenRedirect({ scopes: LOGIN_SCOPES });
+  }
+}
+
+// Try to get a Teams token silently — returns null if Chat.Read not consented
+async function getTeamsToken() {
+  try {
+    const instance = getMsalInstance();
+    const accounts = instance.getAllAccounts();
+    if (!accounts.length) return null;
+    const res = await instance.acquireTokenSilent({
+      scopes:  TEAMS_SCOPES,
+      account: accounts[0],
+    });
+    return res.accessToken;
+  } catch {
+    return null;   // Chat.Read not granted — skip Teams silently
   }
 }
 
