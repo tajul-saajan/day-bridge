@@ -59,12 +59,13 @@ async function loadLiveData(userEmail) {
     updateLoadingText('Loading emails, calendar, and tasks');
     const teamsToken = await getTeamsToken();  // null if Chat.Read not consented yet
 
-    const [rawEmails, rawEvents, rawWeekEvents, rawTickets, rawTeams] = await Promise.allSettled([
+    const [rawEmails, rawEvents, rawWeekEvents, rawTickets, rawTeams, rawBamboo] = await Promise.allSettled([
       fetchEmails(token),
       fetchCalendarEvents(token),
       fetchWeekCalendarEvents(token),
       fetchMyJiraTickets(userEmail),
       teamsToken ? fetchTeamsChats(teamsToken) : Promise.resolve([]),
+      fetchBambooHR(),
     ]);
 
     const emails     = rawEmails.status     === 'fulfilled' ? normalizeEmails(rawEmails.value)     : [];
@@ -80,7 +81,8 @@ async function loadLiveData(userEmail) {
       jiraError     = jiraResult.error     || null;
     }
 
-    const teamsChats = rawTeams.status === 'fulfilled' ? normalizeTeamsChats(rawTeams.value) : [];
+    const teamsChats = rawTeams.status  === 'fulfilled' ? normalizeTeamsChats(rawTeams.value) : [];
+    const bambooData = rawBamboo.status === 'fulfilled' ? rawBamboo.value : null;
 
     if (rawEmails.status     === 'rejected') console.warn('Emails:',        rawEmails.reason);
     if (rawEvents.status     === 'rejected') console.warn('Calendar:',      rawEvents.reason);
@@ -92,6 +94,7 @@ async function loadLiveData(userEmail) {
     renderEmails(emails);
     renderWeeklySchedule(weekEvents);
     renderTeamsChats(teamsChats);
+    renderBambooHR(bambooData);
     updateStats(tickets, events.length, emails.length);
     updateProductivityMeter(tickets, events.length);
 
@@ -371,6 +374,53 @@ function renderWeeklySchedule(allEvents) {
       <span class="week-day-num">${d.getDate()}</span>
       <div class="week-dots">${dots}</div>
       ${count > 0 ? `<span class="week-count">${count}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+
+// --- BambooHR ---------------------------------------------------------------
+
+async function fetchBambooHR() {
+  const res = await fetch('/api/bamboohr');
+  if (!res.ok) return null;
+  return res.json();
+}
+
+function renderBambooHR(data) {
+  const card  = document.getElementById('bambooCard');
+  const list  = document.getElementById('bambooList');
+  const count = document.getElementById('bambooCount');
+  if (!list || !card) return;
+
+  if (!data || !data.configured || data.error) {
+    card.classList.add('hidden');
+    return;
+  }
+
+  const people = data.whosOut || [];
+  card.classList.remove('hidden');
+  if (count) count.textContent = people.length;
+
+  if (!people.length) {
+    list.innerHTML = '<div class="bamboo-empty">Everyone is in today!</div>';
+    return;
+  }
+
+  const typeLabel = t => ({ timeOff:'Time Off', holiday:'Holiday', sickLeave:'Sick' }[t] || t || 'Leave');
+
+  list.innerHTML = people.map(p => {
+    const initials = (p.name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+    const dateRange = p.start === p.end
+      ? p.start
+      : `${p.start} to ${p.end}`;
+    return `
+    <div class="bamboo-person">
+      <div class="bamboo-avatar">${escHtml(initials)}</div>
+      <div>
+        <div class="bamboo-name">${escHtml(p.name || 'Unknown')}</div>
+        <div class="bamboo-dates">${escHtml(dateRange)} &middot; <span class="bamboo-type">${escHtml(typeLabel(p.type))}</span></div>
+      </div>
     </div>`;
   }).join('');
 }

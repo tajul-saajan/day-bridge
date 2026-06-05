@@ -1,13 +1,8 @@
 {
   "routes": [
-    {
-      "route": "/api/jira-tickets",
-      "allowedRoles": ["anonymous"]
-    },
-    {
-      "route": "/api/summarize",
-      "allowedRoles": ["anonymous"]
-    }
+    { "route": "/api/jira-tickets", "allowedRoles": ["anonymous"] },
+    { "route": "/api/summarize",    "allowedRoles": ["anonymous"] },
+    { "route": "/api/bamboohr",     "allowedRoles": ["anonymous"] }
   ],
   "navigationFallback": {
     "rewrite": "/index.html",
