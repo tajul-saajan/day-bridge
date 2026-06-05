@@ -46,7 +46,7 @@ function onLogoutSuccess() {
   renderMockData();
 }
 
-async function loadLiveData(userEmail) {
+async function loadLiveData(userEmail = _currentEmail) {
   showLoading('Fetching your data…');
   try {
     const token = await getAccessToken();
