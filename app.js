@@ -4,7 +4,6 @@ const AVATAR_COLORS = ['#0078D4','#0052CC','#7B61FF','#0e7a3c','#c25000','#d92b3
 // Task filter state
 let _allTasks     = [];
 let _activeFilter = 'all';
-let _refreshTimer = null;
 let _currentEmail = '';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -35,13 +34,9 @@ function onLoginSuccess(response) {
   document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
   document.getElementById('statusBar').classList.remove('hidden');
   loadLiveData(email);
-  // Auto-refresh every 2 minutes to detect new emails/tickets/messages
-  if (_refreshTimer) clearInterval(_refreshTimer);
-  _refreshTimer = setInterval(() => loadLiveData(_currentEmail), 15 * 60 * 1000);
 }
 
 function onLogoutSuccess() {
-  if (_refreshTimer) { clearInterval(_refreshTimer); _refreshTimer = null; }
   _currentEmail = '';
   document.getElementById('loginBtn').classList.remove('hidden');
   document.getElementById('userInfo').classList.add('hidden');
@@ -117,7 +112,7 @@ async function loadLiveData(userEmail) {
     }
 
   } catch (err) {
-    console.error('loadLiveData:', err);  // Auto-refresh every 15 minutes to detect new emails/tickets/messages
+    console.error('loadLiveData:', err);
 
     const dot = document.querySelector('.status-dot');
     if (dot) { dot.className = 'status-dot offline'; }
