@@ -7,6 +7,14 @@ class DayBridgeNotifications {
     this._list   = JSON.parse(localStorage.getItem('db_notif_list')  || '[]');
     this._ctx    = null;
     this._open   = false;
+    // Prime AudioContext on first user interaction so sounds work after page reload
+    document.addEventListener('click', () => {
+      if (!this._ctx) {
+        try { this._ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+      } else if (this._ctx.state === 'suspended') {
+        this._ctx.resume();
+      }
+    }, { passive: true });
   }
 
   // ─── Audio Context ──────────────────────────────────────────────
@@ -19,20 +27,24 @@ class DayBridgeNotifications {
 
   _tone(freqs, dur = 0.25) {
     try {
-      const ctx = this._audio();
-      freqs.forEach((freq, i) => {
-        const osc  = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = freq;
-        osc.type = 'sine';
-        const t = ctx.currentTime + i * (dur * 0.65);
-        gain.gain.setValueAtTime(0.22, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
-        osc.start(t);
-        osc.stop(t + dur + 0.05);
-      });
+      const ctx  = this._audio();
+      const play = () => {
+        freqs.forEach((freq, i) => {
+          const osc  = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.value = freq;
+          osc.type = 'sine';
+          const t = ctx.currentTime + i * (dur * 0.65);
+          gain.gain.setValueAtTime(0.22, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+          osc.start(t);
+          osc.stop(t + dur + 0.05);
+        });
+      };
+      if (ctx.state === 'suspended') ctx.resume().then(play);
+      else play();
     } catch (e) {}
   }
 
