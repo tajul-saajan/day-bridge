@@ -37,7 +37,7 @@ function onLoginSuccess(response) {
   loadLiveData(email);
   // Auto-refresh every 2 minutes to detect new emails/tickets/messages
   if (_refreshTimer) clearInterval(_refreshTimer);
-  _refreshTimer = setInterval(() => loadLiveData(_currentEmail), 2 * 60 * 1000);
+  _refreshTimer = setInterval(() => loadLiveData(_currentEmail), 15 * 60 * 1000);
 }
 
 function onLogoutSuccess() {
@@ -117,7 +117,8 @@ async function loadLiveData(userEmail) {
     }
 
   } catch (err) {
-    console.error('loadLiveData:', err);
+    console.error('loadLiveData:', err);  // Auto-refresh every 15 minutes to detect new emails/tickets/messages
+
     const dot = document.querySelector('.status-dot');
     if (dot) { dot.className = 'status-dot offline'; }
     document.getElementById('statusText').textContent = 'Error - using demo data';
