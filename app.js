@@ -69,13 +69,14 @@ async function loadLiveData(userEmail = _currentEmail) {
     const events     = rawEvents.status     === 'fulfilled' ? normalizeEvents(rawEvents.value)     : [];
     const weekEvents = rawWeekEvents.status === 'fulfilled' ? normalizeEvents(rawWeekEvents.value) : [];
 
-    // Jira returns { issues, queryUser, authEmail, error }
-    let tickets = [], jiraQueryUser = userEmail, jiraError = null;
+    // Jira returns { issues, doneToday, queryUser, authEmail, error }
+    let tickets = [], jiraQueryUser = userEmail, jiraError = null, doneToday = 0;
     if (rawTickets.status === 'fulfilled') {
       const jiraResult = rawTickets.value;
       tickets       = normalizeJira(jiraResult.issues  || []);
       jiraQueryUser = jiraResult.queryUser || userEmail;
       jiraError     = jiraResult.error     || null;
+      doneToday     = jiraResult.doneToday || 0;
     }
 
     const teamsChats = rawTeams.status  === 'fulfilled' ? normalizeTeamsChats(rawTeams.value) : [];
@@ -92,7 +93,7 @@ async function loadLiveData(userEmail = _currentEmail) {
     renderWeeklySchedule(weekEvents);
     renderTeamsChats(teamsChats);
     renderBambooHR(bambooData);
-    updateStats(tickets, events.length, emails.length);
+    updateStats(tickets, events.length, emails.length, doneToday);
     updateProductivityMeter(tickets, events.length);
 
     // Fire notifications for new items since last check
@@ -579,12 +580,11 @@ function calendarIcon() { return '<svg width="32" height="32" viewBox="0 0 18 18
 function emailIcon()    { return '<svg width="32" height="32" viewBox="0 0 18 18" fill="none"><rect x="1" y="4" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M1 6l8 5 8-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'; }
 
 
-function updateStats(tasks, eventCount, emailCount) {
-  const open = tasks.filter(t => t.status !== 'done').length;
-  const done = tasks.filter(t => t.status === 'done').length;
+function updateStats(tasks, eventCount, emailCount, doneToday = 0) {
+  const open = tasks.length;
   const set  = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   set('statOpenTickets', open);
-  set('statDoneToday',   done);
+  set('statDoneToday',   doneToday);
   set('statMeetings',    eventCount);
   set('statEmails',      emailCount);
 }

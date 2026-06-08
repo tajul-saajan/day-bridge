@@ -14,34 +14,42 @@ module.exports = async function (context, req) {
     return;
   }
 
-  const auth = Buffer.from(`${authEmail}:${token}`).toString('base64');
-  const jql  = encodeURIComponent(
+  const auth   = Buffer.from(`${authEmail}:${token}`).toString('base64');
+  const headers = { Authorization: `Basic ${auth}`, Accept: 'application/json' };
+  const fields  = 'summary,priority,status,duedate,issuetype,assignee';
+
+  const jqlOpen = encodeURIComponent(
     `assignee = "${queryUser}" AND statusCategory != Done ORDER BY priority ASC, due ASC`
   );
-  const fields = 'summary,priority,status,duedate,issuetype,assignee';
-  const url    = `${baseUrl}/rest/api/3/search/jql?jql=${jql}&fields=${fields}&maxResults=20`;
+  const jqlDone = encodeURIComponent(
+    `assignee = "${queryUser}" AND statusCategory = Done AND updated >= startOfDay() ORDER BY updated DESC`
+  );
+
+  const urlOpen = `${baseUrl}/rest/api/3/search/jql?jql=${jqlOpen}&fields=${fields}&maxResults=20`;
+  const urlDone = `${baseUrl}/rest/api/3/search/jql?jql=${jqlDone}&fields=${fields}&maxResults=50`;
 
   try {
-    const data = await httpGet(url, {
-      Authorization: `Basic ${auth}`,
-      Accept: 'application/json',
-    });
+    const [openData, doneData] = await Promise.all([
+      httpGet(urlOpen, headers),
+      httpGet(urlDone, headers).catch(() => ({ total: 0 })),
+    ]);
 
     context.res = {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
       body: {
-        issues:    data.issues || [],
-        total:     data.total  || 0,
+        issues:    openData.issues || [],
+        total:     openData.total  || 0,
+        doneToday: doneData.total  || 0,
         queryUser,
         authEmail,
-        error:     data.errorMessages?.[0] || null,
+        error:     openData.errorMessages?.[0] || null,
       },
     };
   } catch (err) {
     context.res = {
       status: 500,
-      body: { error: err.message, queryUser, authEmail, issues: [] },
+      body: { error: err.message, queryUser, authEmail, issues: [], doneToday: 0 },
     };
   }
 };
