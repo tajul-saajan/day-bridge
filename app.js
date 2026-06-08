@@ -324,7 +324,7 @@ function renderTeamsChats(chats) {
       <div class="teams-avatar">${escHtml(initials)}</div>
       <div class="teams-body">
         <div class="teams-row1">
-          <span class="teams-topic" onclick="window.open('https://teams.microsoft.com','_blank')">${escHtml(c.topic)}</span>
+          <span class="teams-topic" onclick="window.open('https://teams.microsoft.com/l/chat/${encodeURIComponent(c.id)}/0?tenantId=a3be1280-7a3a-4edc-b258-0d6a539beee9','_blank')">${escHtml(c.topic)}</span>
           <span class="teams-time">${time}</span>
         </div>
         ${c.lastSender ? `<div class="teams-sender">${escHtml(c.lastSender)}</div>` : ''}

@@ -22,7 +22,7 @@ module.exports = async function (context, req) {
     `assignee = "${queryUser}" AND statusCategory != Done ORDER BY priority ASC, due ASC`
   );
   const jqlDone = encodeURIComponent(
-    `assignee = "${queryUser}" AND statusCategory = Done AND updated >= startOfDay() ORDER BY updated DESC`
+    `assignee = "${queryUser}" AND (statusCategory = Done OR status in ("Fulfilled","Closed","Resolved","Done","Complete","Completed")) AND updated >= startOfDay() ORDER BY updated DESC`
   );
 
   const urlOpen = `${baseUrl}/rest/api/3/search/jql?jql=${jqlOpen}&fields=${fields}&maxResults=20`;

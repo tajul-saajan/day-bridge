@@ -241,27 +241,28 @@ body {
 /* ─── Dashboard Grid ──────────────────────────────────────────── */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr 0.95fr;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 18px;
+}
+
+/* ─── Bottom Row: Teams + BambooHR ───────────────────────────── */
+.bottom-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 18px;
   align-items: start;
 }
-.side-stack { display: flex; flex-direction: column; gap: 18px; }
+.bottom-row .hidden { display: none; }
+.bottom-row:has(> .card:only-child) { grid-template-columns: 1fr; }
 
-@media (max-width: 1280px) {
-  .dashboard-grid {
-    grid-template-columns: 1.3fr 1fr 1fr;
-  }
-  .side-stack {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
-  }
+@media (max-width: 1024px) {
+  .dashboard-grid { grid-template-columns: 1.3fr 1fr; }
+  .bottom-row     { grid-template-columns: 1fr; }
 }
-@media (max-width: 860px) {
+@media (max-width: 700px) {
   .dashboard-grid { grid-template-columns: 1fr; }
-  .side-stack { grid-column: auto; display: flex; flex-direction: column; }
-  .list-container { max-height: 300px; }
 }
 
 /* ─── Card ────────────────────────────────────────────────────── */
@@ -529,7 +530,7 @@ body {
 .notif-text  { font-size: 12px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ─── BambooHR — Who's Out ───────────────────────────────────── */
-.bamboo-list  {
+.bamboo-list {
   display: flex; flex-wrap: wrap; gap: 10px;
   padding: 14px 18px;
   overflow-y: auto;
@@ -557,7 +558,6 @@ body {
 }
 
 /* ─── Teams Chat Panel ───────────────────────────────────────── */
-.teams-card { display: flex; flex-direction: column; }
 .teams-list {
   padding: 4px 0;
   overflow-y: auto;
