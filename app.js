@@ -130,11 +130,12 @@ async function loadLiveData(userEmail) {
     }
 
   } catch (err) {
-    console.error('loadLiveData:', err);
+    console.error('loadLiveData error:', err);
 
     const dot = document.querySelector('.status-dot');
     if (dot) { dot.className = 'status-dot offline'; }
-    document.getElementById('statusText').textContent = 'Error - using demo data';
+    const msg = err?.message ? err.message.slice(0, 60) : 'unknown error';
+    document.getElementById('statusText').textContent = `Error: ${msg}`;
   } finally {
     hideLoading();
   }

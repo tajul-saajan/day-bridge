@@ -11,6 +11,7 @@ async function fetchMyJiraTickets(userEmail) {
 
   return {
     issues:    data.issues    || [],
+    doneToday: data.doneToday || 0,
     queryUser: data.queryUser || userEmail || '',
     authEmail: data.authEmail || '',
     error:     data.error     || null,
