@@ -47,7 +47,19 @@ function onLogoutSuccess() {
   renderMockData();
 }
 
-async function loadLiveData(userEmail = _currentEmail) {
+async function loadLiveData(userEmail) {
+  // Always resolve from live MSAL account so Refresh is never stale
+  if (!userEmail) {
+    try {
+      const accounts = getMsalInstance().getAllAccounts();
+      userEmail = accounts[0]?.username || _currentEmail;
+    } catch {
+      userEmail = _currentEmail;
+    }
+  }
+  if (userEmail && userEmail !== _currentEmail) _currentEmail = userEmail;
+  if (!userEmail) { console.warn('loadLiveData: no user email'); return; }
+
   showLoading('Fetching your data…');
   try {
     const token = await getAccessToken();
@@ -310,7 +322,17 @@ function renderTeamsChats(chats) {
   const count = document.getElementById('teamsCount');
   if (!list) return;
 
-  if (!chats.length) { card?.classList.add('hidden'); return; }
+  if (!chats.length) {
+    if (_teamsToken) {
+      // Connected to Teams but all chats are read
+      card?.classList.remove('hidden');
+      list.innerHTML = '<div class="teams-empty">No unread messages</div>';
+      if (count) count.textContent = '0';
+    } else {
+      card?.classList.add('hidden');
+    }
+    return;
+  }
   card?.classList.remove('hidden');
   if (count) count.textContent = chats.length;
 

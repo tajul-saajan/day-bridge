@@ -556,6 +556,10 @@ body {
   padding: 16px 18px; font-size: 13px;
   color: var(--text-muted); font-style: italic;
 }
+.teams-empty {
+  padding: 16px 18px; font-size: 13px;
+  color: var(--text-muted); font-style: italic;
+}
 
 /* ─── Teams Chat Panel ───────────────────────────────────────── */
 .teams-list {

@@ -3,7 +3,8 @@
 const GRAPH = 'https://graph.microsoft.com/v1.0';
 
 async function fetchEmails(accessToken) {
-  const url = `${GRAPH}/me/messages` +
+  // /inbox/messages scopes to the Inbox only — excludes Deleted Items and other folders
+  const url = `${GRAPH}/me/mailFolders/inbox/messages` +
     `?$filter=isRead eq false` +
     `&$top=10` +
     `&$orderby=receivedDateTime desc` +
@@ -62,14 +63,25 @@ async function fetchCalendarEvents(accessToken) {
 
 async function fetchTeamsChats(accessToken) {
   try {
-    const url = `${GRAPH}/me/chats?$expand=lastMessagePreview&$top=5` +
+    // Expand viewpoint to get unread count per chat
+    const url = `${GRAPH}/me/chats?$expand=lastMessagePreview,viewpoint&$top=20` +
       `&$select=id,topic,chatType,lastUpdatedDateTime`;
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    if (!res.ok) return [];   // gracefully skip if Chat.Read not granted
+    if (!res.ok) return [];
     const data = await res.json();
-    return data.value || [];
+    const all = data.value || [];
+    // Keep only chats with unread messages
+    return all.filter(c => {
+      const vp = c.viewpoint;
+      if (!vp) return true; // no viewpoint data — include as fallback
+      if (typeof vp.unreadMessageCount === 'number') return vp.unreadMessageCount > 0;
+      // fall back to date comparison if unreadMessageCount not present
+      const lastRead = vp.lastMessageReadDateTime;
+      if (!lastRead) return true;
+      return new Date(lastRead) < new Date(c.lastUpdatedDateTime);
+    });
   } catch { return []; }
 }
 
