@@ -31,10 +31,9 @@ module.exports = async function (context, req) {
   const jqlOpen = encodeURIComponent(
     `assignee = "${queryUser}" AND statusCategory != Done ORDER BY priority ASC, due ASC`
   );
-  // statusCategoryChangedDate tracks exactly when the issue moved into the Done category,
-  // unlike `updated` which changes on any edit (comments, labels, etc.)
+  // Total count of all resolved/completed tickets ever assigned to this user
   const jqlDone = encodeURIComponent(
-    `assignee = "${queryUser}" AND statusCategory = Done AND statusCategoryChangedDate >= startOfDay() ORDER BY statusCategoryChangedDate DESC`
+    `assignee = "${queryUser}" AND statusCategory = Done ORDER BY resolved DESC`
   );
 
   const urlOpen = `${baseUrl}/rest/api/3/search/jql?jql=${jqlOpen}&fields=${fields}&maxResults=20`;
