@@ -31,10 +31,10 @@ module.exports = async function (context, req) {
   const jqlOpen = encodeURIComponent(
     `assignee = "${queryUser}" AND statusCategory != Done ORDER BY priority ASC, due ASC`
   );
-  // Use only statusCategory = Done — avoids silent 400 errors when specific status names
-  // don't exist in this Jira instance (httpGet resolves 400s, so errorMessages silences total)
+  // statusCategoryChangedDate tracks exactly when the issue moved into the Done category,
+  // unlike `updated` which changes on any edit (comments, labels, etc.)
   const jqlDone = encodeURIComponent(
-    `assignee = "${queryUser}" AND statusCategory = Done AND updated >= startOfDay() ORDER BY updated DESC`
+    `assignee = "${queryUser}" AND statusCategory = Done AND statusCategoryChangedDate >= startOfDay() ORDER BY statusCategoryChangedDate DESC`
   );
 
   const urlOpen = `${baseUrl}/rest/api/3/search/jql?jql=${jqlOpen}&fields=${fields}&maxResults=20`;

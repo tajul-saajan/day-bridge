@@ -63,21 +63,28 @@ async function fetchCalendarEvents(accessToken) {
 
 async function fetchTeamsChats(accessToken) {
   try {
-    // Expand viewpoint to get unread count per chat
-    const url = `${GRAPH}/me/chats?$expand=lastMessagePreview,viewpoint&$top=20` +
-      `&$select=id,topic,chatType,lastUpdatedDateTime`;
+    // viewpoint is a complex property (not navigation) — use $select, not $expand
+    const url = `${GRAPH}/me/chats?$expand=lastMessagePreview&$top=20` +
+      `&$select=id,topic,chatType,lastUpdatedDateTime,viewpoint`;
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!res.ok) return [];
     const data = await res.json();
     const all = data.value || [];
-    // Keep only chats with unread messages
+    if (!all.length) return [];
+
+    // Filter to unread only if the API returned viewpoint data
+    const hasViewpoint = all.some(c => c.viewpoint != null);
+    if (!hasViewpoint) {
+      // viewpoint not supported for this tenant — show 5 most recent chats
+      return all.slice(0, 5);
+    }
+
     return all.filter(c => {
       const vp = c.viewpoint;
-      if (!vp) return true; // no viewpoint data — include as fallback
+      if (!vp) return true; // unknown read state → include
       if (typeof vp.unreadMessageCount === 'number') return vp.unreadMessageCount > 0;
-      // fall back to date comparison if unreadMessageCount not present
       const lastRead = vp.lastMessageReadDateTime;
       if (!lastRead) return true;
       return new Date(lastRead) < new Date(c.lastUpdatedDateTime);
