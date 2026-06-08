@@ -62,7 +62,7 @@ async function fetchCalendarEvents(accessToken) {
 
 async function fetchTeamsChats(accessToken) {
   try {
-    const url = `${GRAPH}/me/chats?$expand=lastMessagePreview&$top=8` +
+    const url = `${GRAPH}/me/chats?$expand=lastMessagePreview&$top=5` +
       `&$select=id,topic,chatType,lastUpdatedDateTime`;
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -83,6 +83,32 @@ function normalizeTeamsChats(raw) {
     lastSender:  c.lastMessagePreview?.from?.user?.displayName || '',
     lastUpdated: new Date(c.lastUpdatedDateTime),
   }));
+}
+
+async function fetchChatMessages(accessToken, chatId) {
+  const url = `${GRAPH}/chats/${chatId}/messages?$top=10`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) throw new Error(`Chat messages: ${res.status}`);
+  const data = await res.json();
+  return (data.value || [])
+    .filter(m => m.messageType === 'message' && m.from?.user)
+    .reverse();
+}
+
+async function sendTeamsMessage(accessToken, chatId, text) {
+  const url = `${GRAPH}/chats/${chatId}/messages`;
+  const res = await fetch(url, {
+    method:  'POST',
+    headers: {
+      Authorization:  `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ body: { content: text } }),
+  });
+  if (!res.ok) throw new Error(`Send message: ${res.status}`);
+  return res.json();
 }
 
 async function fetchUserProfile(accessToken) {

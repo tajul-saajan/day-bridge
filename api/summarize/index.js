@@ -10,7 +10,7 @@ module.exports = async function (context, req) {
     return;
   }
 
-  const { tasks, emails } = req.body || {};
+  const { tasks, emails, teams } = req.body || {};
   if (!tasks && !emails) {
     context.res = { status: 400, body: { error: 'tasks and emails required' } };
     return;
@@ -24,18 +24,21 @@ module.exports = async function (context, req) {
 
   const client = new Anthropic({ apiKey });
 
-  const prompt = `You are a productivity assistant. Given a user's open tasks and unread emails,
-produce a concise daily briefing.
+  const teamsSection = (teams && teams.length)
+    ? `\nTeams Messages (sender and chat name only — do NOT reference message content):\n${JSON.stringify(teams, null, 2)}`
+    : '';
+
+  const prompt = `You are a productivity assistant. Given a user's open tasks, unread emails, and Teams activity, produce a concise daily briefing.
 
 Open Tasks (Jira):
 ${JSON.stringify(tasks ?? [], null, 2)}
 
 Unread Emails (top 5):
 ${JSON.stringify(emails ?? [], null, 2)}
-
+${teamsSection}
 Respond ONLY with valid JSON in this exact shape:
 {
-  "summary": "2-3 sentence briefing of the day's priorities",
+  "summary": "2-3 sentence briefing of the day's priorities. If there are Teams messages, mention who messaged but do not describe what they said.",
   "focusOrder": ["task or email description in recommended order", ...],
   "blockers": ["description of any blockers or urgent items", ...]
 }`;

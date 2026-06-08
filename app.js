@@ -5,6 +5,7 @@ const AVATAR_COLORS = ['#0078D4','#0052CC','#7B61FF','#0e7a3c','#c25000','#d92b3
 let _allTasks     = [];
 let _activeFilter = 'all';
 let _currentEmail = '';
+let _teamsToken   = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   setDateDisplay();
@@ -53,6 +54,7 @@ async function loadLiveData(userEmail = _currentEmail) {
 
     updateLoadingText('Loading emails, calendar, and tasks');
     const teamsToken = await getTeamsToken();  // null if Chat.Read not consented yet
+    _teamsToken = teamsToken;
 
     const [rawEmails, rawEvents, rawWeekEvents, rawTickets, rawTeams, rawBamboo] = await Promise.allSettled([
       fetchEmails(token),
@@ -101,8 +103,11 @@ async function loadLiveData(userEmail = _currentEmail) {
 
     // AI summary â€” show stat fallback if Claude unavailable
     updateLoadingText('Getting AI summary');
+    const teamsMeta = teamsChats
+      .filter(c => c.lastSender)
+      .map(c => ({ chat: c.topic, from: c.lastSender }));
     try {
-      await loadAiSummary(tickets, emails.slice(0, 5));
+      await loadAiSummary(tickets, emails.slice(0, 5), teamsMeta);
     } catch (err) {
       console.warn('AI summary unavailable:', err);
       document.getElementById('aiSummary').textContent =
@@ -122,11 +127,11 @@ async function loadLiveData(userEmail = _currentEmail) {
   }
 }
 
-async function loadAiSummary(tasks, emails) {
+async function loadAiSummary(tasks, emails, teams = []) {
   const res = await fetch('/api/summarize', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ tasks, emails }),
+    body:    JSON.stringify({ tasks, emails, teams }),
   });
   if (!res.ok) throw new Error(`AI summary: ${res.status}`);
   const ai = await res.json();
@@ -308,24 +313,103 @@ function renderTeamsChats(chats) {
   card?.classList.remove('hidden');
   if (count) count.textContent = chats.length;
 
-  list.innerHTML = chats.map(c => {
+  list.innerHTML = chats.slice(0, 5).map(c => {
     const time     = formatDate(c.lastUpdated);
     const initials = c.lastSender
       ? c.lastSender.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
       : 'T';
     return `
-    <div class="teams-item" onclick="window.open('https://teams.microsoft.com','_blank')">
+    <div class="teams-item">
       <div class="teams-avatar">${escHtml(initials)}</div>
       <div class="teams-body">
         <div class="teams-row1">
-          <span class="teams-topic">${escHtml(c.topic)}</span>
+          <span class="teams-topic" onclick="window.open('https://teams.microsoft.com','_blank')">${escHtml(c.topic)}</span>
           <span class="teams-time">${time}</span>
         </div>
         ${c.lastSender ? `<div class="teams-sender">${escHtml(c.lastSender)}</div>` : ''}
-        <div class="teams-preview">${escHtml(c.lastMessage)}</div>
+        <div class="teams-preview-row" data-chat-id="${escHtml(c.id)}" onclick="toggleChatHistory(this.dataset.chatId, this)">
+          <div class="teams-preview">${escHtml(c.lastMessage)}</div>
+          <span class="teams-chevron">&#9660;</span>
+        </div>
+        <div class="teams-reply">
+          <input class="teams-reply-input" type="text" placeholder="Quick reply..."
+            maxlength="500"
+            onkeydown="if(event.key==='Enter') this.nextElementSibling.click()" />
+          <button class="teams-reply-btn" data-chat-id="${escHtml(c.id)}"
+            onclick="quickReplyTeams(this.dataset.chatId, this)">Send</button>
+        </div>
       </div>
     </div>`;
   }).join('');
+}
+
+async function quickReplyTeams(chatId, btnEl) {
+  const wrapper = btnEl.closest('.teams-reply');
+  const input   = wrapper.querySelector('.teams-reply-input');
+  const text    = input.value.trim();
+  if (!text || !_teamsToken) return;
+
+  btnEl.disabled    = true;
+  btnEl.textContent = 'Sending...';
+  try {
+    await sendTeamsMessage(_teamsToken, chatId, text);
+    input.value       = '';
+    btnEl.textContent = 'Sent ✓';
+    setTimeout(() => { btnEl.textContent = 'Send'; btnEl.disabled = false; }, 2000);
+  } catch (err) {
+    console.error('Teams send:', err);
+    btnEl.textContent = 'Failed';
+    btnEl.disabled    = false;
+    setTimeout(() => { btnEl.textContent = 'Send'; }, 2000);
+  }
+}
+
+async function toggleChatHistory(chatId, rowEl) {
+  const item    = rowEl.closest('.teams-item');
+  const chevron = rowEl.querySelector('.teams-chevron');
+  const existing = item.querySelector('.teams-history');
+
+  if (existing) {
+    existing.remove();
+    rowEl.classList.remove('expanded');
+    return;
+  }
+
+  rowEl.classList.add('expanded');
+  const hist = document.createElement('div');
+  hist.className = 'teams-history';
+  hist.innerHTML = '<div class="teams-hist-loading">Loading messages...</div>';
+  rowEl.insertAdjacentElement('afterend', hist);
+
+  if (!_teamsToken) {
+    hist.innerHTML = '<div class="teams-hist-empty">Sign in with Teams to view history.</div>';
+    return;
+  }
+
+  try {
+    const messages = await fetchChatMessages(_teamsToken, chatId);
+    if (!messages.length) {
+      hist.innerHTML = '<div class="teams-hist-empty">No messages found.</div>';
+      return;
+    }
+    hist.innerHTML = messages.map(m => {
+      const sender  = m.from?.user?.displayName || 'Unknown';
+      const upn     = (m.from?.user?.userPrincipalName || '').toLowerCase();
+      const isSelf  = upn === _currentEmail.toLowerCase();
+      const content = (m.body?.content || '').replace(/<[^>]+>/g, '').trim();
+      const time    = new Date(m.createdDateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (!content) return '';
+      return `
+      <div class="teams-msg ${isSelf ? 'sent' : 'recv'}">
+        ${!isSelf ? `<div class="teams-msg-sender">${escHtml(sender)}</div>` : ''}
+        <div class="teams-msg-bubble">${escHtml(content)}</div>
+        <div class="teams-msg-time">${time}</div>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    console.error('Chat history:', err);
+    hist.innerHTML = '<div class="teams-hist-empty">Failed to load messages.</div>';
+  }
 }
 
 // â”€â”€â”€ Render â€” Weekly Schedule â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
