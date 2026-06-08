@@ -137,7 +137,7 @@
       <div class="ps-chips" id="psChips"></div>
     </div>
 
-    <!-- 3-Column Dashboard Grid -->
+    <!-- 4-Column Dashboard Grid -->
     <div class="dashboard-grid">
 
       <!-- Col 1: Jira Tasks -->
@@ -145,7 +145,7 @@
         <div class="card-header">
           <div class="card-title focus-title">
             <span class="focus-dot focus-dot-amber"></span>
-            <span>Jira Tickets &mdash; Today's Focus</span>
+            <span>Jira Tickets</span>
           </div>
           <div class="card-header-right">
             <div id="jiraUserBadge"></div>
@@ -161,7 +161,7 @@
         <div id="taskList" class="list-container"></div>
       </section>
 
-      <!-- Col 2: Combined Schedule (week strip + today events) -->
+      <!-- Col 2: Schedule (week strip + today events) -->
       <section class="card">
         <div class="card-header">
           <div class="card-title focus-title">
@@ -170,18 +170,13 @@
           </div>
           <span id="eventCount" class="badge badge-blue">0</span>
         </div>
-        <!-- Week strip -->
         <div id="weeklyList" class="weekly-grid"></div>
-        <!-- Today divider -->
-        <div class="schedule-today-divider">
-          <span>Today</span>
-        </div>
-        <!-- Today's events -->
+        <div class="schedule-today-divider"><span>Today</span></div>
         <div id="eventList" class="list-container"></div>
       </section>
 
-      <!-- Col 3: Email Side Panel -->
-      <section class="card email-panel">
+      <!-- Col 3: Emails -->
+      <section class="card">
         <div class="card-header">
           <div class="card-title focus-title">
             <span class="focus-dot" style="background:#c25000"></span>
@@ -192,31 +187,34 @@
         <div id="emailList" class="list-container"></div>
       </section>
 
+      <!-- Col 4: Teams + BambooHR stacked -->
+      <div class="side-stack">
+
+        <section class="card teams-card" id="teamsCard">
+          <div class="card-header">
+            <div class="card-title focus-title">
+              <span class="focus-dot" style="background:#6264a7"></span>
+              <span>Teams Messages</span>
+            </div>
+            <span id="teamsCount" class="badge" style="background:#ebebf5;color:#6264a7">0</span>
+          </div>
+          <div id="teamsList" class="teams-list"></div>
+        </section>
+
+        <section class="card bamboo-card hidden" id="bambooCard">
+          <div class="card-header">
+            <div class="card-title focus-title">
+              <span class="focus-dot" style="background:#73c04d"></span>
+              <span>Who's Out Today</span>
+            </div>
+            <span id="bambooCount" class="badge" style="background:#edf7e6;color:#4a8c2a">0</span>
+          </div>
+          <div id="bambooList" class="bamboo-list"></div>
+        </section>
+
+      </div>
+
     </div>
-
-    <!-- BambooHR — Who's Out Today -->
-    <section class="card bamboo-card hidden" id="bambooCard">
-      <div class="card-header">
-        <div class="card-title focus-title">
-          <span class="focus-dot" style="background:#73c04d"></span>
-          <span>Who's Out Today</span>
-        </div>
-        <span id="bambooCount" class="badge" style="background:#edf7e6;color:#4a8c2a">0</span>
-      </div>
-      <div id="bambooList" class="bamboo-list"></div>
-    </section>
-
-    <!-- Teams Chat Panel -->
-    <section class="card teams-card" id="teamsCard">
-      <div class="card-header">
-        <div class="card-title focus-title">
-          <span class="focus-dot" style="background:#6264a7"></span>
-          <span>Teams Messages</span>
-        </div>
-        <span id="teamsCount" class="badge" style="background:#ebebf5;color:#6264a7">0</span>
-      </div>
-      <div id="teamsList" class="teams-list"></div>
-    </section>
 
   </main>
 
