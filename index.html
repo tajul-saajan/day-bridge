@@ -149,14 +149,14 @@
           </div>
           <div class="card-header-right">
             <div id="jiraUserBadge"></div>
-            <div class="filter-pills">
-              <button class="filter-pill active" data-filter="all"      onclick="filterTasks('all')">All</button>
-              <button class="filter-pill"        data-filter="critical" onclick="filterTasks('critical')">Critical</button>
-              <button class="filter-pill"        data-filter="high"     onclick="filterTasks('high')">High</button>
-              <button class="filter-pill"        data-filter="medium"   onclick="filterTasks('medium')">Medium</button>
-            </div>
             <span id="taskCount" class="badge badge-blue">0</span>
           </div>
+        </div>
+        <div class="filter-bar">
+          <button class="filter-pill active" data-filter="all"      onclick="filterTasks('all')">All</button>
+          <button class="filter-pill"        data-filter="critical" onclick="filterTasks('critical')">Critical</button>
+          <button class="filter-pill"        data-filter="high"     onclick="filterTasks('high')">High</button>
+          <button class="filter-pill"        data-filter="medium"   onclick="filterTasks('medium')">Medium</button>
         </div>
         <div id="taskList" class="list-container"></div>
       </section>

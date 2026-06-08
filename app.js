@@ -283,7 +283,7 @@ function renderEmails(emails) {
   list.innerHTML = emails.map((e, i) => {
     const color   = AVATAR_COLORS[i % AVATAR_COLORS.length];
     const initial = e.from.charAt(0).toUpperCase();
-    const date    = formatDate(e.date);
+    const date    = formatMsgDate(e.date);
     const url     = 'https://outlook.office.com/mail/';
     return `
     <div class="email-item" onclick="window.open('${url}','_blank')">
@@ -314,7 +314,7 @@ function renderTeamsChats(chats) {
   if (count) count.textContent = chats.length;
 
   list.innerHTML = chats.slice(0, 5).map(c => {
-    const time     = formatDate(c.lastUpdated);
+    const time     = formatMsgDate(c.lastUpdated);
     const initials = c.lastSender
       ? c.lastSender.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
       : 'T';
@@ -553,6 +553,17 @@ function formatDate(d) {
   if (diff < -1)   return `${Math.abs(diff)}d overdue`;
   if (diff < 7)    return `In ${diff}d`;
   return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+// For chat/email timestamps — never says "overdue", shows time for today
+function formatMsgDate(d) {
+  const date  = new Date(d);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dDay  = new Date(date); dDay.setHours(0,0,0,0);
+  const diff  = Math.round((dDay - today) / 86400000);
+  if (diff === 0)  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (diff === -1) return 'Yesterday';
+  if (diff >= -6)  return date.toLocaleDateString([], { weekday: 'short' });
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 function daysFromNow(n) { const d = new Date(); d.setDate(d.getDate()+n); return d; }
 function minsAgo(m)     { return new Date(Date.now() - m*60000); }
