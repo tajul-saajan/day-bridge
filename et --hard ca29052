@@ -1,0 +1,55 @@
+[33mc2c8530[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m fix: count tickets done today & Unread message 2
+[33mfc66660[m fix: count tickets done today & Unread message
+[33mca29052[m fix: layout 3-col grid, Teams deep link, strip HTML entities, done today JQL
+[33mcbf4197[m fix: count tickets done today via separate JQL query using startOfDay()
+[33me6045ed[m fix: remove overdue from chat dates, clean filter bar and Teams card UI
+[33mb1e104e[m feat: 4-column dashboard layout with per-column scroll and larger text
+[33m136ca0c[m feat: Teams chat history expand-on-click + AI summary Teams sender awareness
+[33mc06a814[m fix: resume AudioContext before playing notification sounds
+[33mdb170fe[m Chg: refresh time auto to manual
+[33m666b252[m Chg: refresh time 2 to manual
+[33m7004426[m Chg: refresh time 2 to 15 min
+[33m8e6c0b0[m fet:bamboohr, correct Claude model name
+[33m82b0942[m fix: correct Claude model name to claude-sonnet-4-6
+[33mc2771b6[m fix: make Chat.Read optional so sign-in works without admin consent
+[33mb09a6af[m ignored
+[33ma097b31[m git ignored
+[33m0449f2c[m feat: Teams chat panel, notification bell with sounds, auto-refresh every 2 min
+[33mb2637b1[m â†‘ replaced
+[33mfc9b9c7[m fix: encoding corruption, ⚠ icons, Done Today counter includes today's closed tickets
+[33m4a739e8[m polished ui
+[33m16455ca[m fix: make all calendar events clickable — Teams link or Outlook calendar fallback
+[33m8cca916[m docs: add hosting plan comparison table — currently on Free tier
+[33mc2feb7b[m docs: clarify .env is reference only, all secrets live in Azure Configuration
+[33me4f4c8b[m docs: add complete setup workflow — AAD, Azure SWA, GitHub, pipeline, Jira, Claude
+[33m1fcbf40[m Merge branch 'main'
+[33mf794110[m fix: switch to redirect-based login, remove popup permanently
+[33mb2fc5ec[m ai summary ui rebuid
+[33m5db12a2[m fix: AI summary fallback, safe email/meeting URLs, popup window detection
+[33m251a868[m fix: stop popup window from running full app load on MSAL redirect
+[33m3793919[m auth issue solved
+[33m45f1b15[m fix: migrate Jira API to /rest/api/3/search/jql endpoint
+[33mc857746[m jira and ui changed
+[33me98031e[m feat: clickable items, merged schedule, multi-row AI summary, auth redirects
+[33m9d771f3[m feat: 3-column layout, compact AI strip, weekly schedule, email side panel, clean empty state
+[33mfb0ade0[m fix: serve MSAL locally to fix sign-in on production
+[33m0ca347a[m sign in issue
+[33m0721560[m fix: hardcode public config values for production
+[33m182b3b1[m trigger: redeploy to Azure
+[33m909f0ba[m fix: update workflow for new DayBridge resource (gentle-bush)
+[33m6f429f6[m ci: add Azure Static Web Apps workflow file on-behalf-of: @Azure opensource@microsoft.com
+[33m3657e80[m api location added
+[33m5ac7496[m fix: use new AZURE_SWA_DEPLOY_TOKEN secret for deployment
+[33mf887fef[m fix: rename workflow to match Azure expected filename
+[33m071ccf7[m trying to solve token issue
+[33m5524d3c[m tocken added
+[33m757f876[m name and tocked added
+[33m7f45e3c[m CSP directive added
+[33mdc23840[m checking permission
+[33m0ac298c[m fix: skip app build for static HTML site
+[33mbc52a17[m node issue solved
+[33m8abc395[m all info inserted
+[33m4ae227f[m Merge branch 'main' of https://github.com/Kobir-Bappy/DayBridge
+[33m40a2443[m github intregation
+[33m6beda60[m ci: add Azure Static Web Apps workflow file on-behalf-of: @Azure opensource@microsoft.com
+[33m816ccaf[m dayBridge
