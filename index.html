@@ -161,18 +161,16 @@
         <div id="taskList" class="list-container"></div>
       </section>
 
-      <!-- Col 2: Schedule -->
-      <section class="card">
+      <!-- Col 2: Teams Messages -->
+      <section class="card" id="teamsCard">
         <div class="card-header">
           <div class="card-title focus-title">
-            <span class="focus-dot focus-dot-blue"></span>
-            <span>Schedule</span>
+            <span class="focus-dot" style="background:#6264a7"></span>
+            <span>Teams Messages</span>
           </div>
-          <span id="eventCount" class="badge badge-blue">0</span>
+          <span id="teamsCount" class="badge" style="background:#ebebf5;color:#6264a7">0</span>
         </div>
-        <div id="weeklyList" class="weekly-grid"></div>
-        <div class="schedule-today-divider"><span>Today</span></div>
-        <div id="eventList" class="list-container"></div>
+        <div id="teamsList" class="teams-list"></div>
       </section>
 
       <!-- Col 3: Emails -->
@@ -189,18 +187,20 @@
 
     </div>
 
-    <!-- Bottom Row: Teams + BambooHR -->
+    <!-- Bottom Row: Schedule + BambooHR -->
     <div class="bottom-row">
 
-      <section class="card" id="teamsCard">
+      <section class="card">
         <div class="card-header">
           <div class="card-title focus-title">
-            <span class="focus-dot" style="background:#6264a7"></span>
-            <span>Teams Messages</span>
+            <span class="focus-dot focus-dot-blue"></span>
+            <span>Schedule</span>
           </div>
-          <span id="teamsCount" class="badge" style="background:#ebebf5;color:#6264a7">0</span>
+          <span id="eventCount" class="badge badge-blue">0</span>
         </div>
-        <div id="teamsList" class="teams-list"></div>
+        <div id="weeklyList" class="weekly-grid"></div>
+        <div class="schedule-today-divider"><span>Today</span></div>
+        <div id="eventList" class="list-container"></div>
       </section>
 
       <section class="card hidden" id="bambooCard">

@@ -43,7 +43,6 @@ function onLogoutSuccess() {
   document.getElementById('userInfo').classList.add('hidden');
   document.getElementById('notifWrapper').classList.add('hidden');
   document.getElementById('statusBar').classList.add('hidden');
-  document.getElementById('teamsCard').classList.add('hidden');
   renderMockData();
 }
 
@@ -324,14 +323,12 @@ function renderTeamsChats(chats) {
   if (!list) return;
 
   if (!chats.length) {
-    if (_teamsToken) {
-      // Connected to Teams but all chats are read
-      card?.classList.remove('hidden');
-      list.innerHTML = '<div class="teams-empty">No unread messages</div>';
-      if (count) count.textContent = '0';
-    } else {
-      card?.classList.add('hidden');
-    }
+    // Teams is now a primary column — always visible, never hidden
+    card?.classList.remove('hidden');
+    if (count) count.textContent = '0';
+    list.innerHTML = _teamsToken
+      ? '<div class="teams-empty">No unread messages</div>'
+      : '<div class="teams-empty">Sign in to view Teams messages</div>';
     return;
   }
   card?.classList.remove('hidden');
@@ -536,6 +533,7 @@ function renderMockData() {
   renderCalendar([]);
   renderEmails([]);
   renderWeeklySchedule([]);
+  renderTeamsChats([]);
   updateStats([], 0, 0);
 
   const fill = document.getElementById('psFill');

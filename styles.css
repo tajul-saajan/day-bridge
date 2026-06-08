@@ -565,7 +565,7 @@ body {
 .teams-list {
   padding: 4px 0;
   overflow-y: auto;
-  max-height: clamp(220px, calc(100vh - 520px), 420px);
+  max-height: clamp(320px, calc(100vh - 400px), 680px);
 }
 .teams-item {
   display: flex; align-items: flex-start; gap: 12px;
