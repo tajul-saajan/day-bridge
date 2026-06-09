@@ -4,6 +4,9 @@
 .env.*.local
 .env.example
 
+# Front-end per-environment config (copy of config.example.js) — local only
+/config.js
+
 # Dependencies — exclude node_modules but keep lock files
 node_modules/
 api/node_modules/

@@ -1,9 +1,16 @@
 // MSAL Authentication — redirect-based (no popup, no first-attempt failures)
 
+// Per-environment overrides come from an optional, gitignored config.js that
+// sets window.DAYBRIDGE_CONFIG (the static-SPA equivalent of a .env — the
+// browser can't read .env at runtime in a no-build app). Copy config.example.js
+// to config.js to do SSO from localhost. All three values are public (not
+// secrets). redirectUri MUST also be registered on the Azure AD app.
+const _cfg = (typeof window !== 'undefined' && window.DAYBRIDGE_CONFIG) || {};
+
 const AUTH_CONFIG = {
-  clientId:   '50575903-5945-4162-b6ad-8d9ad175034d',
-  tenantId:   'a3be1280-7a3a-4edc-b258-0d6a539beee9',
-  redirectUri: window.location.origin,
+  clientId:    _cfg.clientId  || '50575903-5945-4162-b6ad-8d9ad175034d',
+  tenantId:    _cfg.tenantId  || 'a3be1280-7a3a-4edc-b258-0d6a539beee9',
+  redirectUri: _cfg.redirectUri || window.location.origin,
 };
 
 const msalConfig = {
