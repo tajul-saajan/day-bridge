@@ -60,15 +60,6 @@ test('missing body returns 400', async () => {
   restore();
 });
 
-test('missing auth returns 401', async () => {
-  withKey();
-  stubAuthInvalid();
-  const ctx = makeContext();
-  await summarize(ctx, makeReq({ method: 'POST', body, auth: false }));
-  assert.equal(ctx.res.status, 401);
-  restore();
-});
-
 test('missing CLAUDE_API_KEY returns 500', async () => {
   delete process.env.CLAUDE_API_KEY;
   stubAuthValid();

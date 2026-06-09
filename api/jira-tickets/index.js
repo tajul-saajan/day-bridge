@@ -1,11 +1,13 @@
 // Azure Function: GET /api/jira-tickets?user=<email>
 // Proxies Jira REST search server-side so the Jira token never reaches the
-// browser. Requires an authenticated caller (bearer token).
+// browser. Anonymous at the SWA layer: Azure Static Web Apps overwrites the
+// inbound Authorization header with its own token before it reaches managed
+// functions, so a forwarded MSAL bearer can't be validated here. A real
+// per-user gate would require SWA's built-in auth (EasyAuth) — see README.
 
 const { parseTraceparent, childHeaders } = require('../shared/trace');
 const { makeLogger } = require('../shared/logger');
 const { problem, requestJson } = require('../shared/http');
-const { requireAuth } = require('../shared/auth');
 
 // Jira account identifiers are emails/usernames — reject anything that could
 // break out of the quoted JQL clause (quotes, backslashes, control chars).
@@ -16,16 +18,13 @@ module.exports = async function (context, req) {
   const log   = makeLogger(context, { traceId: trace.traceId });
   const traceHeader = { traceparent: trace.traceparent };
 
-  const principal = await requireAuth(context, req, log);
-  if (!principal) return;
-
   const authEmail = process.env.JIRA_EMAIL    || 'kobir.hosan@wsd.com';
   const token     = process.env.JIRA_TOKEN;
   const baseUrl   = process.env.JIRA_BASE_URL || 'https://wallstreetdocs.atlassian.net';
 
-  // Use the caller's own email (or an explicit ?user=); never fall back to the
+  // The SPA passes the signed-in user's email as ?user=. Never fall back to the
   // service-account email, which would leak its tickets.
-  const queryUser = req.query.user || principal.email || '';
+  const queryUser = req.query.user || '';
   if (!queryUser) {
     context.res = {
       status: 200,

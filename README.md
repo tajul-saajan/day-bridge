@@ -1028,11 +1028,14 @@ managed-Functions service, and records explicit, owned deviations where they do 
 2. **WSD-011 — `/health` must be internal-only.** SWA managed functions have no private
    network, so `/api/health` is reachable externally. Mitigation: it returns only
    non-sensitive presence booleans (never secret values).
-3. **API authentication — Graph-token validation.** The SPA forwards its MSAL Microsoft Graph
-   access token as a bearer. Graph tokens are not third-party-verifiable via JWKS (they carry a
-   `nonce` and their audience is Graph), so the functions validate the token the correct way —
-   by calling Graph `/me` with it (`api/shared/auth.js`). A 200 proves the token is valid,
-   unexpired, and belongs to a tenant user, and yields the caller's identity. A dedicated app
-   API scope (validated locally, no per-call Graph round-trip) is the proper long-term fix.
+3. **API authentication — anonymous functions (accepted limitation).** The data endpoints
+   (`/api/jira-tickets`, `/api/summarize`) run anonymous at the SWA layer. A forwarded
+   `Authorization: Bearer` from the SPA cannot be validated in the function because **Azure
+   Static Web Apps overwrites the inbound `Authorization` header with its own internal token
+   before proxying to managed functions** — so the SPA's Microsoft Graph token never reaches
+   the code (a bearer gate there 401s every caller, including signed-in users). Third-party
+   tokens (Jira, Claude) stay server-side regardless. A real per-user gate requires SWA's
+   built-in auth (EasyAuth, which injects a trustworthy `x-ms-client-principal`); adopting it
+   is a separate effort since the app currently authenticates via MSAL in the SPA.
 4. **WSD-007 — secret store.** Secrets are injected at runtime via **Azure SWA → Configuration**
    today; HashiCorp Vault is the organisation's standard target (paths declared in `secrets.yaml`).

@@ -80,22 +80,13 @@ test('JQL injection in user param is rejected with 400', async () => {
   restore();
 });
 
-test('missing bearer token returns 401', async () => {
+test('no user param returns an empty 200 (never the service account)', async () => {
   withToken();
-  stubAuthValid();
   const ctx = makeContext();
-  await jira(ctx, makeReq({ auth: false }));
-  assert.equal(ctx.res.status, 401);
-  assert.equal(ctx.res.body.error.type, 'authentication');
-  restore();
-});
-
-test('invalid token returns 401', async () => {
-  withToken();
-  stubAuthInvalid();
-  const ctx = makeContext();
-  await jira(ctx, makeReq({ query: { user: 'test.user@wsd.com' } }));
-  assert.equal(ctx.res.status, 401);
+  await jira(ctx, makeReq({ query: {} }));
+  assert.equal(ctx.res.status, 200);
+  assert.equal(ctx.res.body.issues.length, 0);
+  assert.equal(ctx.res.body.queryUser, '');
   restore();
 });
 

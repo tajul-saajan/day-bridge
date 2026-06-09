@@ -1,13 +1,12 @@
 // Azure Function: POST /api/summarize
 // Sends the caller's open tasks and unread emails to Claude and returns a
-// concise daily briefing. Requires an authenticated caller (bearer token).
-// Set CLAUDE_API_KEY in Azure Portal → Configuration. Model is overridable via
-// CLAUDE_MODEL.
+// concise daily briefing. Set CLAUDE_API_KEY in Azure Portal → Configuration.
+// Model is overridable via CLAUDE_MODEL. Anonymous at the SWA layer (SWA owns
+// the Authorization header for managed functions — see jira-tickets / README).
 
 const { parseTraceparent, childHeaders } = require('../shared/trace');
 const { makeLogger } = require('../shared/logger');
 const { problem } = require('../shared/http');
-const { requireAuth } = require('../shared/auth');
 const { createClient } = require('../shared/anthropic');
 
 const DEFAULT_MODEL = 'claude-sonnet-4-6';
@@ -21,9 +20,6 @@ module.exports = async function (context, req) {
     problem(context, { status: 405, type: 'validation', code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed.', headers: traceHeader });
     return;
   }
-
-  const principal = await requireAuth(context, req, log);
-  if (!principal) return;
 
   const { tasks, emails, teams } = req.body || {};
   if (!tasks && !emails) {
