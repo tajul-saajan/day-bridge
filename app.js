@@ -7,8 +7,9 @@ const AVATAR_COLORS = ['#0078D4','#0052CC','#7B61FF','#0e7a3c','#c25000','#d92b3
 let _allTasks     = [];
 let _activeFilter = 'all';
 
-// Signed-in user's email — used to query their Jira tickets on load and refresh
-let _userEmail    = '';
+// Signed-in user's email + Teams token — used across initial load and refresh.
+let _currentEmail = '';
+let _teamsToken   = null;
 
 // ─── Initialisation ─────────────────────────────────────────────
 
@@ -17,6 +18,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   wireEvents();       // bind all handlers (CSP-safe — no inline onclick)
   renderMockData();   // show demo data immediately — presentable without sign-in
   initAuth().catch(console.warn);
+  // Show notification permission banner if not yet decided
+  if ('Notification' in window && Notification.permission === 'default') {
+    document.getElementById('notifPermBanner')?.classList.remove('hidden');
+  }
 });
 
 // Wire all event handlers in JS so index.html needs no inline onclick
@@ -30,9 +35,27 @@ function wireEvents() {
     btn.addEventListener('click', () => filterTasks(btn.dataset.filter))
   );
 
-  // Delegated row-open — survives innerHTML re-renders of the list containers.
-  document.addEventListener('click', e => openFromDataUrl(e.target));
+  // Notification controls (Notif is defined in notifications.js).
+  document.getElementById('notifBtn')     ?.addEventListener('click', () => Notif.toggle());
+  document.getElementById('notifMarkRead')?.addEventListener('click', () => Notif.markRead());
+  document.getElementById('notifEnable')  ?.addEventListener('click', () => Notif.requestPermission());
+  document.getElementById('notifDismiss') ?.addEventListener('click', () =>
+    document.getElementById('notifPermBanner')?.classList.add('hidden'));
+
+  // Delegated handlers — survive innerHTML re-renders of the list containers.
+  document.addEventListener('click', e => {
+    const action = e.target.closest?.('[data-action]');
+    if (action?.dataset.action === 'toggle-chat') { toggleChatHistory(action.dataset.chatId, action); return; }
+    if (action?.dataset.action === 'reply-teams') { quickReplyTeams(action.dataset.chatId, action); return; }
+    openFromDataUrl(e.target);
+  });
   document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.matches?.('.teams-reply-input')) {
+      e.preventDefault();
+      const btn = e.target.closest('.teams-reply')?.querySelector('.teams-reply-btn');
+      if (btn) quickReplyTeams(btn.dataset.chatId, btn);
+      return;
+    }
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-url]')) {
       e.preventDefault();
       openFromDataUrl(e.target);
@@ -66,9 +89,10 @@ function setDateDisplay() {
 function onLoginSuccess(response) {
   const name  = response.account?.name     || response.account?.username || 'User';
   const email = response.account?.username || '';
-  _userEmail  = email;
+  _currentEmail = email;
   document.getElementById('loginBtn').classList.add('hidden');
   document.getElementById('userInfo').classList.remove('hidden');
+  document.getElementById('notifWrapper').classList.remove('hidden');
   document.getElementById('userName').textContent = name;
   document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
   document.getElementById('statusBar').classList.remove('hidden');
@@ -76,61 +100,92 @@ function onLoginSuccess(response) {
 }
 
 function onLogoutSuccess() {
-  _userEmail = '';
+  _currentEmail = '';
   document.getElementById('loginBtn').classList.remove('hidden');
   document.getElementById('userInfo').classList.add('hidden');
+  document.getElementById('notifWrapper').classList.add('hidden');
   document.getElementById('statusBar').classList.add('hidden');
   renderMockData();
 }
 
 // ─── Live Data ───────────────────────────────────────────────────
 
-async function loadLiveData(userEmail = _userEmail) {
+async function loadLiveData(userEmail) {
+  // Always resolve from the live MSAL account so Refresh is never stale.
+  if (!userEmail) {
+    try {
+      const accounts = getMsalInstance().getAllAccounts();
+      userEmail = accounts[0]?.username || _currentEmail;
+    } catch {
+      userEmail = _currentEmail;
+    }
+  }
+  if (userEmail && userEmail !== _currentEmail) _currentEmail = userEmail;
+  if (!userEmail) { console.warn('loadLiveData: no user email'); return; }
+
   showLoading('Fetching your data…');
   try {
     const token = await getAccessToken();
 
     updateLoadingText('Loading emails, calendar, and tasks…');
-    const [rawEmails, rawEvents, rawWeekEvents, rawTickets] = await Promise.allSettled([
+    const teamsToken = await getTeamsToken();  // null if Chat.Read not consented yet
+    _teamsToken = teamsToken;
+
+    const [rawEmails, rawEvents, rawWeekEvents, rawTickets, rawTeams, rawBamboo] = await Promise.allSettled([
       fetchEmails(token),
       fetchCalendarEvents(token),
       fetchWeekCalendarEvents(token),
       fetchMyJiraTickets(userEmail, token),
+      teamsToken ? fetchTeamsChats(teamsToken) : Promise.resolve([]),
+      fetchBambooHR(),
     ]);
 
     const emails     = rawEmails.status     === 'fulfilled' ? normalizeEmails(rawEmails.value)     : [];
     const events     = rawEvents.status     === 'fulfilled' ? normalizeEvents(rawEvents.value)     : [];
     const weekEvents = rawWeekEvents.status === 'fulfilled' ? normalizeEvents(rawWeekEvents.value) : [];
 
-    // Jira returns { issues, queryUser, authEmail, error }
-    let tickets = [], jiraQueryUser = userEmail, jiraError = null;
+    // Jira returns { issues, doneToday, queryUser, authEmail, error }
+    let tickets = [], jiraQueryUser = userEmail, jiraError = null, doneToday = 0;
     if (rawTickets.status === 'fulfilled') {
       const jiraResult = rawTickets.value;
       tickets       = normalizeJira(jiraResult.issues  || []);
       jiraQueryUser = jiraResult.queryUser || userEmail;
       jiraError     = jiraResult.error     || null;
+      doneToday     = jiraResult.doneToday || 0;
     }
 
-    if (rawEmails.status     === 'rejected') console.warn('Emails:',         rawEmails.reason);
-    if (rawEvents.status     === 'rejected') console.warn('Calendar:',       rawEvents.reason);
-    if (rawWeekEvents.status === 'rejected') console.warn('Week calendar:',  rawWeekEvents.reason);
-    if (rawTickets.status    === 'rejected') console.warn('Jira:',           rawTickets.reason);
+    const teamsChats = rawTeams.status  === 'fulfilled' ? normalizeTeamsChats(rawTeams.value) : [];
+    const bambooData = rawBamboo.status === 'fulfilled' ? rawBamboo.value : null;
+
+    if (rawEmails.status     === 'rejected') console.warn('Emails:',        rawEmails.reason);
+    if (rawEvents.status     === 'rejected') console.warn('Calendar:',      rawEvents.reason);
+    if (rawWeekEvents.status === 'rejected') console.warn('Week calendar:', rawWeekEvents.reason);
+    if (rawTickets.status    === 'rejected') console.warn('Jira:',          rawTickets.reason);
 
     renderTasks(tickets, jiraQueryUser, jiraError);
     renderCalendar(events);
     renderEmails(emails);
     renderWeeklySchedule(weekEvents);
-    updateStats(tickets, events.length, emails.length);
+    renderTeamsChats(teamsChats);
+    renderBambooHR(bambooData);
+    updateStats(tickets, events.length, emails.length, doneToday);
     updateProductivityMeter(tickets, events.length);
+
+    // Fire notifications for new items since last check
+    Notif.check(emails.length, tickets.length, teamsChats.length);
 
     document.getElementById('lastUpdated').textContent =
       'Last updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     // The dashboard is fully usable now, so load the AI summary in the background
-    // instead of holding the loading overlay (and the whole UI) on Claude. It
-    // streams into the banner when ready; on failure we show a stat fallback.
+    // instead of holding the whole UI on Claude. It streams into the banner when
+    // ready; on failure we show a stat fallback. Teams senders (not message
+    // content) are passed so the briefing can mention who reached out.
+    const teamsMeta = teamsChats
+      .filter(c => c.lastSender)
+      .map(c => ({ chat: c.topic, from: c.lastSender }));
     document.getElementById('aiSummary').textContent = 'Generating your daily briefing…';
-    loadAiSummary(tickets, emails.slice(0, 5), token).catch(err => {
+    loadAiSummary(tickets, emails.slice(0, 5), teamsMeta, token).catch(err => {
       console.warn('AI summary unavailable:', err);
       document.getElementById('aiSummary').textContent =
         `${tickets.length} open ticket${tickets.length !== 1 ? 's' : ''} · ` +
@@ -139,23 +194,25 @@ async function loadLiveData(userEmail = _userEmail) {
     });
 
   } catch (err) {
-    console.error('loadLiveData:', err);
+    console.error('loadLiveData error:', err);
+
     const dot = document.querySelector('.status-dot');
     if (dot) { dot.className = 'status-dot offline'; }
-    document.getElementById('statusText').textContent = 'Error — using demo data';
+    const msg = err?.message ? err.message.slice(0, 60) : 'unknown error';
+    document.getElementById('statusText').textContent = `Error: ${msg}`;
   } finally {
     hideLoading();
   }
 }
 
-async function loadAiSummary(tasks, emails, accessToken) {
+async function loadAiSummary(tasks, emails, teams = [], accessToken) {
   const res = await fetch('/api/summarize', {
     method:  'POST',
     headers: {
       'Content-Type': 'application/json',
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
-    body:    JSON.stringify({ tasks, emails }),
+    body:    JSON.stringify({ tasks, emails, teams }),
   });
   if (!res.ok) throw new Error(`AI summary: ${res.status}`);
   const ai = await res.json();
@@ -309,7 +366,7 @@ function renderEmails(emails) {
   list.innerHTML = emails.map((e, i) => {
     const color   = AVATAR_COLORS[i % AVATAR_COLORS.length];
     const initial = e.from.charAt(0).toUpperCase();
-    const date    = formatDate(e.date);
+    const date    = formatMsgDate(e.date);
     const url     = 'https://outlook.office.com/mail/';
     return `
     <div class="email-item" role="button" tabindex="0" data-url="${escHtml(url)}">
@@ -324,6 +381,125 @@ function renderEmails(emails) {
       </div>
     </div>`;
   }).join('');
+}
+
+// ─── Render — Teams Chats ────────────────────────────────────────
+
+function renderTeamsChats(chats) {
+  const card  = document.getElementById('teamsCard');
+  const list  = document.getElementById('teamsList');
+  const count = document.getElementById('teamsCount');
+  if (!list) return;
+
+  if (!chats.length) {
+    // Teams is a primary column — always visible, never hidden
+    card?.classList.remove('hidden');
+    if (count) count.textContent = '0';
+    list.innerHTML = _teamsToken
+      ? '<div class="teams-empty">No unread messages</div>'
+      : '<div class="teams-empty">Sign in to view Teams messages</div>';
+    return;
+  }
+  card?.classList.remove('hidden');
+  if (count) count.textContent = chats.length;
+
+  list.innerHTML = chats.slice(0, 5).map(c => {
+    const time     = formatMsgDate(c.lastUpdated);
+    const initials = c.lastSender
+      ? c.lastSender.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+      : 'T';
+    const chatUrl  = `https://teams.microsoft.com/l/chat/${encodeURIComponent(c.id)}/0?tenantId=a3be1280-7a3a-4edc-b258-0d6a539beee9`;
+    // Handlers are delegated (see wireEvents) so no inline onclick is needed —
+    // keeps the strict CSP (script-src 'self').
+    return `
+    <div class="teams-item">
+      <div class="teams-avatar">${escHtml(initials)}</div>
+      <div class="teams-body">
+        <div class="teams-row1">
+          <span class="teams-topic" role="button" tabindex="0" data-url="${escHtml(chatUrl)}">${escHtml(c.topic)}</span>
+          <span class="teams-time">${time}</span>
+        </div>
+        ${c.lastSender ? `<div class="teams-sender">${escHtml(c.lastSender)}</div>` : ''}
+        <div class="teams-preview-row" role="button" tabindex="0" data-action="toggle-chat" data-chat-id="${escHtml(c.id)}">
+          <div class="teams-preview">${escHtml(c.lastMessage)}</div>
+          <span class="teams-chevron">&#9660;</span>
+        </div>
+        <div class="teams-reply">
+          <input class="teams-reply-input" type="text" placeholder="Quick reply..." maxlength="500" data-chat-id="${escHtml(c.id)}" />
+          <button class="teams-reply-btn" data-action="reply-teams" data-chat-id="${escHtml(c.id)}">Send</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function quickReplyTeams(chatId, btnEl) {
+  const wrapper = btnEl.closest('.teams-reply');
+  const input   = wrapper.querySelector('.teams-reply-input');
+  const text    = input.value.trim();
+  if (!text || !_teamsToken) return;
+
+  btnEl.disabled    = true;
+  btnEl.textContent = 'Sending...';
+  try {
+    await sendTeamsMessage(_teamsToken, chatId, text);
+    input.value       = '';
+    btnEl.textContent = 'Sent ✓';
+    setTimeout(() => { btnEl.textContent = 'Send'; btnEl.disabled = false; }, 2000);
+  } catch (err) {
+    console.error('Teams send:', err);
+    btnEl.textContent = 'Failed';
+    btnEl.disabled    = false;
+    setTimeout(() => { btnEl.textContent = 'Send'; }, 2000);
+  }
+}
+
+async function toggleChatHistory(chatId, rowEl) {
+  const item    = rowEl.closest('.teams-item');
+  const chevron = rowEl.querySelector('.teams-chevron');
+  const existing = item.querySelector('.teams-history');
+
+  if (existing) {
+    existing.remove();
+    rowEl.classList.remove('expanded');
+    return;
+  }
+
+  rowEl.classList.add('expanded');
+  const hist = document.createElement('div');
+  hist.className = 'teams-history';
+  hist.innerHTML = '<div class="teams-hist-loading">Loading messages...</div>';
+  rowEl.insertAdjacentElement('afterend', hist);
+
+  if (!_teamsToken) {
+    hist.innerHTML = '<div class="teams-hist-empty">Sign in with Teams to view history.</div>';
+    return;
+  }
+
+  try {
+    const messages = await fetchChatMessages(_teamsToken, chatId);
+    if (!messages.length) {
+      hist.innerHTML = '<div class="teams-hist-empty">No messages found.</div>';
+      return;
+    }
+    hist.innerHTML = messages.map(m => {
+      const sender  = m.from?.user?.displayName || 'Unknown';
+      const upn     = (m.from?.user?.userPrincipalName || '').toLowerCase();
+      const isSelf  = upn === _currentEmail.toLowerCase();
+      const content = (m.body?.content || '').replace(/<[^>]+>/g, '').trim();
+      const time    = new Date(m.createdDateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (!content) return '';
+      return `
+      <div class="teams-msg ${isSelf ? 'sent' : 'recv'}">
+        ${!isSelf ? `<div class="teams-msg-sender">${escHtml(sender)}</div>` : ''}
+        <div class="teams-msg-bubble">${escHtml(content)}</div>
+        <div class="teams-msg-time">${time}</div>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    console.error('Chat history:', err);
+    hist.innerHTML = '<div class="teams-hist-empty">Failed to load messages.</div>';
+  }
 }
 
 // ─── Render — Weekly Schedule ────────────────────────────────────
@@ -372,6 +548,52 @@ function renderWeeklySchedule(allEvents) {
   }).join('');
 }
 
+// ─── BambooHR — Who's Out ────────────────────────────────────────
+
+async function fetchBambooHR() {
+  const res = await fetch('/api/bamboohr');
+  if (!res.ok) return null;
+  return res.json();
+}
+
+function renderBambooHR(data) {
+  const card  = document.getElementById('bambooCard');
+  const list  = document.getElementById('bambooList');
+  const count = document.getElementById('bambooCount');
+  if (!list || !card) return;
+
+  if (!data || !data.configured || data.error) {
+    card.classList.add('hidden');
+    return;
+  }
+
+  const people = data.whosOut || [];
+  card.classList.remove('hidden');
+  if (count) count.textContent = people.length;
+
+  if (!people.length) {
+    list.innerHTML = '<div class="bamboo-empty">Everyone is in today!</div>';
+    return;
+  }
+
+  const typeLabel = t => ({ timeOff:'Time Off', holiday:'Holiday', sickLeave:'Sick' }[t] || t || 'Leave');
+
+  list.innerHTML = people.map(p => {
+    const initials = (p.name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+    const dateRange = p.start === p.end
+      ? p.start
+      : `${p.start} to ${p.end}`;
+    return `
+    <div class="bamboo-person">
+      <div class="bamboo-avatar">${escHtml(initials)}</div>
+      <div>
+        <div class="bamboo-name">${escHtml(p.name || 'Unknown')}</div>
+        <div class="bamboo-dates">${escHtml(dateRange)} &middot; <span class="bamboo-type">${escHtml(typeLabel(p.type))}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // ─── Empty state before sign-in ──────────────────────────────────
 
 function renderMockData() {
@@ -379,6 +601,7 @@ function renderMockData() {
   renderCalendar([]);
   renderEmails([]);
   renderWeeklySchedule([]);
+  renderTeamsChats([]);
   updateStats([], 0, 0);
 
   const fill = document.getElementById('psFill');
@@ -426,6 +649,17 @@ function formatDate(d) {
   if (diff < 7)    return `In ${diff}d`;
   return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
+// For chat/email timestamps — never says "overdue", shows time for today
+function formatMsgDate(d) {
+  const date  = new Date(d);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dDay  = new Date(date); dDay.setHours(0,0,0,0);
+  const diff  = Math.round((dDay - today) / 86400000);
+  if (diff === 0)  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (diff === -1) return 'Yesterday';
+  if (diff >= -6)  return date.toLocaleDateString([], { weekday: 'short' });
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
 function daysFromNow(n) { const d = new Date(); d.setDate(d.getDate()+n); return d; }
 function minsAgo(m)     { return new Date(Date.now() - m*60000); }
 function hrs(base, h, m=0) { const d=new Date(base); d.setHours(h,m,0,0); return d; }
@@ -441,12 +675,11 @@ function emailIcon()    { return '<svg width="32" height="32" viewBox="0 0 18 18
 
 // ─── Stats Bar ───────────────────────────────────────────────────
 
-function updateStats(tasks, eventCount, emailCount) {
-  const open = tasks.filter(t => t.status !== 'done').length;
-  const done = tasks.filter(t => t.status === 'done').length;
+function updateStats(tasks, eventCount, emailCount, doneToday = 0) {
+  const open = tasks.length;
   const set  = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   set('statOpenTickets', open);
-  set('statDoneToday',   done);
+  set('statDoneToday',   doneToday);
   set('statMeetings',    eventCount);
   set('statEmails',      emailCount);
 }

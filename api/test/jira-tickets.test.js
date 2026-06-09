@@ -34,22 +34,24 @@ test('happy path returns 200 with issues', async () => {
   restore();
 });
 
-test('resolves accountId and queries non-done tickets by it', async () => {
+test('resolves accountId, queries active tickets + Done-today count by it', async () => {
   withToken();
   stubAuthValid();
-  let jqlUrl = '';
+  const urls = [];
   http.setRequestJson(async (url) => {
     if (url.includes('/user/search')) return [{ accountId: 'aid-42', emailAddress: 'test.user@wsd.com' }];
-    jqlUrl = url;
+    urls.push(decodeURIComponent(url));
     return { issues: [], total: 0 };
   });
   const ctx = makeContext();
   await jira(ctx, makeReq({ query: { user: 'test.user@wsd.com' } }));
-  const jql = decodeURIComponent(jqlUrl);
-  assert.ok(jql.includes('assignee = "aid-42"'), 'queries by resolved accountId');
-  assert.ok(jql.includes('statusCategory != Done'), 'excludes Done, keeps active statuses');
-  assert.ok(!jql.includes('statusCategoryChangedDate'), 'no Done-today clause');
-  assert.ok(jqlUrl.includes('maxResults=50'), 'raised result cap');
+  const openJql = urls.find(u => u.includes('statusCategory != Done'));
+  const doneJql = urls.find(u => u.includes('statusCategory = Done'));
+  assert.ok(openJql, 'fires the active-tickets query (statusCategory != Done)');
+  assert.ok(openJql.includes('assignee = "aid-42"'), 'queries by resolved accountId');
+  assert.ok(openJql.includes('maxResults=50'), 'raised result cap');
+  assert.ok(doneJql, 'fires the Done-today count query');
+  assert.ok(doneJql.includes('resolved >= startOfDay()'), 'Done-today scoped to today');
   restore();
 });
 

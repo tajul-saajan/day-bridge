@@ -3,7 +3,8 @@
 const GRAPH = 'https://graph.microsoft.com/v1.0';
 
 async function fetchEmails(accessToken) {
-  const url = `${GRAPH}/me/messages` +
+  // /inbox/messages scopes to the Inbox only — excludes Deleted Items and other folders
+  const url = `${GRAPH}/me/mailFolders/inbox/messages` +
     `?$filter=isRead eq false` +
     `&$top=10` +
     `&$orderby=receivedDateTime desc` +
@@ -58,6 +59,87 @@ async function fetchCalendarEvents(accessToken) {
   if (!res.ok) throw new Error(`Graph calendar: ${res.status} ${res.statusText}`);
   const data = await res.json();
   return data.value || [];
+}
+
+async function fetchTeamsChats(accessToken) {
+  try {
+    // viewpoint is a complex property (not navigation) — use $select, not $expand
+    const url = `${GRAPH}/me/chats?$expand=lastMessagePreview&$top=20` +
+      `&$select=id,topic,chatType,lastUpdatedDateTime,viewpoint`;
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const all = data.value || [];
+    if (!all.length) return [];
+
+    // Filter to unread only if the API returned viewpoint data
+    const hasViewpoint = all.some(c => c.viewpoint != null);
+    if (!hasViewpoint) {
+      // viewpoint not supported for this tenant — show 5 most recent chats
+      return all.slice(0, 5);
+    }
+
+    return all.filter(c => {
+      const vp = c.viewpoint;
+      if (!vp) return true; // unknown read state → include
+      if (typeof vp.unreadMessageCount === 'number') return vp.unreadMessageCount > 0;
+      const lastRead = vp.lastMessageReadDateTime;
+      if (!lastRead) return true;
+      return new Date(lastRead) < new Date(c.lastUpdatedDateTime);
+    });
+  } catch { return []; }
+}
+
+function normalizeTeamsChats(raw) {
+  return raw.map(c => ({
+    id:          c.id,
+    topic:       c.topic || (c.chatType === 'oneOnOne' ? 'Direct Message' : 'Group Chat'),
+    chatType:    c.chatType,
+    lastMessage: stripHtml(c.lastMessagePreview?.body?.content || ''),
+    lastSender:  c.lastMessagePreview?.from?.user?.displayName || '',
+    lastUpdated: new Date(c.lastUpdatedDateTime),
+  }));
+}
+
+function stripHtml(html) {
+  return html
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+async function fetchChatMessages(accessToken, chatId) {
+  const url = `${GRAPH}/chats/${chatId}/messages?$top=10`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) throw new Error(`Chat messages: ${res.status}`);
+  const data = await res.json();
+  return (data.value || [])
+    .filter(m => m.messageType === 'message' && m.from?.user)
+    .reverse();
+}
+
+async function sendTeamsMessage(accessToken, chatId, text) {
+  const url = `${GRAPH}/chats/${chatId}/messages`;
+  const res = await fetch(url, {
+    method:  'POST',
+    headers: {
+      Authorization:  `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ body: { content: text } }),
+  });
+  if (!res.ok) throw new Error(`Send message: ${res.status}`);
+  return res.json();
 }
 
 async function fetchUserProfile(accessToken) {

@@ -23,8 +23,17 @@ module.exports = async function (context, req) {
   const token     = process.env.JIRA_TOKEN;
   const baseUrl   = process.env.JIRA_BASE_URL || 'https://wallstreetdocs.atlassian.net';
 
-  // Default to the authenticated caller's own email when no user param given.
-  const queryUser = req.query.user || principal.email || authEmail;
+  // Use the caller's own email (or an explicit ?user=); never fall back to the
+  // service-account email, which would leak its tickets.
+  const queryUser = req.query.user || principal.email || '';
+  if (!queryUser) {
+    context.res = {
+      status: 200,
+      headers: { 'Content-Type': 'application/json', ...traceHeader },
+      body: { issues: [], total: 0, doneToday: 0, queryUser: '', authEmail, error: null },
+    };
+    return;
+  }
 
   if (!token) {
     log.error('JIRA_TOKEN not configured');
@@ -41,34 +50,40 @@ module.exports = async function (context, req) {
     return;
   }
 
-  const auth = Buffer.from(`${authEmail}:${token}`).toString('base64');
+  const auth    = Buffer.from(`${authEmail}:${token}`).toString('base64');
+  const headers = { Authorization: `Basic ${auth}`, Accept: 'application/json' };
+  const fields  = 'summary,priority,status,duedate,issuetype,assignee';
 
   // Jira Cloud no longer matches assignee by email (GDPR), so resolve the email
   // to the user's accountId first; fall back to the raw value if lookup fails.
   const accountId = await resolveAccountId(baseUrl, auth, queryUser, childHeaders(trace), log);
   const assignee  = (accountId || queryUser).replace(/(["\\])/g, '\\$1');
 
-  // Show every active ticket assigned to the user (To Do, In Progress, In Review,
-  // …) — i.e. anything not in the Done category.
-  const jql  = encodeURIComponent(
+  // Active tickets (To Do, In Progress, In Review, … — anything not Done) plus a
+  // count of tickets the user completed today, for the "Done Today" stat.
+  const jqlOpen = encodeURIComponent(
     `assignee = "${assignee}" AND statusCategory != Done ORDER BY priority ASC, due ASC`
   );
-  const fields = 'summary,priority,status,duedate,issuetype,assignee';
-  const url    = `${baseUrl}/rest/api/3/search/jql?jql=${jql}&fields=${fields}&maxResults=50`;
+  const jqlDone = encodeURIComponent(
+    `assignee = "${assignee}" AND statusCategory = Done AND resolved >= startOfDay() ORDER BY resolved DESC`
+  );
+  const urlOpen = `${baseUrl}/rest/api/3/search/jql?jql=${jqlOpen}&fields=${fields}&maxResults=50`;
+  const urlDone = `${baseUrl}/rest/api/3/search/jql?jql=${jqlDone}&fields=${fields}&maxResults=50`;
 
   try {
-    const data = await requestJson(url, {
-      method: 'GET',
-      headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' },
-      traceHeaders: childHeaders(trace),
-    });
+    const [openData, doneData] = await Promise.all([
+      requestJson(urlOpen, { method: 'GET', headers, traceHeaders: childHeaders(trace) }),
+      requestJson(urlDone, { method: 'GET', headers, traceHeaders: childHeaders(trace) }).catch(() => ({ total: 0 })),
+    ]);
+    const doneToday = doneData.total || 0;
 
     context.res = {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...traceHeader },
       body: {
-        issues:    data.issues || [],
-        total:     data.total  || 0,
+        issues:    openData.issues || [],
+        total:     openData.total  || 0,
+        doneToday,
         queryUser,
         authEmail,
         error:     null,
