@@ -68,14 +68,14 @@ module.exports = async function (context, req) {
       const r = await get(`${baseUrl}/rest/api/3/search/jql?jql=${encodeURIComponent(clause)}&fields=summary&maxResults=5`);
       return r.ok ? { count: (r.data.issues || []).length, total: r.data.total ?? null, keys: (r.data.issues || []).map(i => i.key) } : r;
     };
-    const userSearch = await get(`${baseUrl}/rest/api/3/user/search?query=${encodeURIComponent(queryUser)}`);
-    const assignableSearch = await get(`${baseUrl}/rest/api/3/user/assignable/search?query=${encodeURIComponent(queryUser)}&project=QT`);
+    const q = req.query.q || queryUser;   // arbitrary search term for probing
+    const userSearch = await get(`${baseUrl}/rest/api/3/user/search?query=${encodeURIComponent(q)}`);
+    const mapped = userSearch.ok ? userSearch.data.map(u => ({ accountId: u.accountId, email: u.emailAddress, name: u.displayName, active: u.active })) : userSearch;
+    const firstId = userSearch.ok && userSearch.data[0]?.accountId;
     context.res = { status: 200, headers: { 'Content-Type': 'application/json', ...traceHeader }, body: {
-      queryUser,
-      userSearch: userSearch.ok ? userSearch.data.map(u => ({ accountId: u.accountId, email: u.emailAddress, name: u.displayName, active: u.active })) : userSearch,
-      assignableSearch: assignableSearch.ok ? assignableSearch.data.map(u => ({ accountId: u.accountId, email: u.emailAddress, name: u.displayName })) : assignableSearch,
-      byEmail:    await probe(`assignee = "${queryUser}" AND statusCategory != Done`),
-      byCurrentUserNote: 'n/a',
+      queryUser, q,
+      userSearch: mapped,
+      byResolvedId: firstId ? await probe(`assignee = "${firstId}" AND statusCategory != Done`) : 'no-id',
     }};
     return;
   }
