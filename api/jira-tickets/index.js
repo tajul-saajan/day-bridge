@@ -58,6 +58,24 @@ module.exports = async function (context, req) {
   const accountId = await resolveAccountId(baseUrl, auth, queryUser, childHeaders(trace), log);
   const assignee  = (accountId || queryUser).replace(/(["\\])/g, '\\$1');
 
+  // TEMP diagnostic: compare querying by accountId vs by email.
+  if (req.query.debug) {
+    const probe = async (clause) => {
+      const u = `${baseUrl}/rest/api/3/search/jql?jql=${encodeURIComponent(clause)}&fields=summary&maxResults=5`;
+      try {
+        const d = await requestJson(u, { method: 'GET', headers, traceHeaders: childHeaders(trace) });
+        return { count: (d.issues || []).length, total: d.total ?? null, keys: (d.issues || []).map(i => i.key), errs: d.errorMessages || null };
+      } catch (e) { return { error: e.statusCode || e.message, snippet: e.snippet }; }
+    };
+    context.res = { status: 200, headers: { 'Content-Type': 'application/json', ...traceHeader }, body: {
+      queryUser, resolvedAccountId: accountId,
+      byAccountId: accountId ? await probe(`assignee = "${accountId}" AND statusCategory != Done`) : 'no-accountId',
+      byEmail:     await probe(`assignee = "${queryUser}" AND statusCategory != Done`),
+      byAccountIdUnquoted: accountId ? await probe(`assignee = ${accountId} AND statusCategory != Done`) : 'no-accountId',
+    }};
+    return;
+  }
+
   // Active tickets (To Do, In Progress, In Review, … — anything not Done) plus a
   // count of tickets the user completed today, for the "Done Today" stat.
   const jqlOpen = encodeURIComponent(
