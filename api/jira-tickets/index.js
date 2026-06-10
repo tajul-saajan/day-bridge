@@ -68,15 +68,19 @@ module.exports = async function (context, req) {
       const r = await get(`${baseUrl}/rest/api/3/search/jql?jql=${encodeURIComponent(clause)}&fields=summary&maxResults=5`);
       return r.ok ? { count: (r.data.issues || []).length, total: r.data.total ?? null, keys: (r.data.issues || []).map(i => i.key) } : r;
     };
-    const q = req.query.q || queryUser;   // arbitrary search term for probing
-    const userSearch = await get(`${baseUrl}/rest/api/3/user/search?query=${encodeURIComponent(q)}`);
-    const mapped = userSearch.ok ? userSearch.data.map(u => ({ accountId: u.accountId, email: u.emailAddress, name: u.displayName, active: u.active })) : userSearch;
-    const id = req.query.id;   // pass a known accountId to test assignee-by-id
+    const probeOld = async (clause) => {
+      const r = await get(`${baseUrl}/rest/api/3/search?jql=${encodeURIComponent(clause)}&fields=summary,assignee&maxResults=5`);
+      return r.ok ? { count: (r.data.issues || []).length, total: r.data.total ?? null, keys: (r.data.issues || []).map(i => i.key) } : r;
+    };
+    const key = req.query.key || 'QT-3243';
     context.res = { status: 200, headers: { 'Content-Type': 'application/json', ...traceHeader }, body: {
-      queryUser, q,
-      userSearch: mapped,
-      byKnownId: id ? await probe(`assignee = "${id}" AND statusCategory != Done`) : 'no-id-param',
-      issueLookup: await probe(`assignee = "${queryUser}"`),   // any status, by email
+      queryUser,
+      // Can the service account see this issue at all (project/browse permission)?
+      byKey_new:  await probe(`key = ${key}`),
+      byKey_old:  await probeOld(`key = ${key}`),
+      // Does the OLD /search endpoint return total + assignee for this issue's owner?
+      byEmail_old: await probeOld(`assignee = "${queryUser}"`),
+      currentUser_old: await probeOld(`assignee = currentUser()`),
     }};
     return;
   }
