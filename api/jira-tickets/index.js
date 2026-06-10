@@ -71,11 +71,12 @@ module.exports = async function (context, req) {
     const q = req.query.q || queryUser;   // arbitrary search term for probing
     const userSearch = await get(`${baseUrl}/rest/api/3/user/search?query=${encodeURIComponent(q)}`);
     const mapped = userSearch.ok ? userSearch.data.map(u => ({ accountId: u.accountId, email: u.emailAddress, name: u.displayName, active: u.active })) : userSearch;
-    const firstId = userSearch.ok && userSearch.data[0]?.accountId;
+    const id = req.query.id;   // pass a known accountId to test assignee-by-id
     context.res = { status: 200, headers: { 'Content-Type': 'application/json', ...traceHeader }, body: {
       queryUser, q,
       userSearch: mapped,
-      byResolvedId: firstId ? await probe(`assignee = "${firstId}" AND statusCategory != Done`) : 'no-id',
+      byKnownId: id ? await probe(`assignee = "${id}" AND statusCategory != Done`) : 'no-id-param',
+      issueLookup: await probe(`assignee = "${queryUser}"`),   // any status, by email
     }};
     return;
   }
