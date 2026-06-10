@@ -68,19 +68,20 @@ module.exports = async function (context, req) {
       const r = await get(`${baseUrl}/rest/api/3/search/jql?jql=${encodeURIComponent(clause)}&fields=summary&maxResults=5`);
       return r.ok ? { count: (r.data.issues || []).length, total: r.data.total ?? null, keys: (r.data.issues || []).map(i => i.key) } : r;
     };
-    const probeOld = async (clause) => {
-      const r = await get(`${baseUrl}/rest/api/3/search?jql=${encodeURIComponent(clause)}&fields=summary,assignee&maxResults=5`);
-      return r.ok ? { count: (r.data.issues || []).length, total: r.data.total ?? null, keys: (r.data.issues || []).map(i => i.key) } : r;
-    };
     const key = req.query.key || 'QT-3243';
+    const myself = await get(`${baseUrl}/rest/api/3/myself`);
+    const issue  = await get(`${baseUrl}/rest/api/3/issue/${encodeURIComponent(key)}?fields=summary,assignee,status`);
     context.res = { status: 200, headers: { 'Content-Type': 'application/json', ...traceHeader }, body: {
       queryUser,
-      // Can the service account see this issue at all (project/browse permission)?
-      byKey_new:  await probe(`key = ${key}`),
-      byKey_old:  await probeOld(`key = ${key}`),
-      // Does the OLD /search endpoint return total + assignee for this issue's owner?
-      byEmail_old: await probeOld(`assignee = "${queryUser}"`),
-      currentUser_old: await probeOld(`assignee = currentUser()`),
+      myself: myself.ok ? { accountId: myself.data.accountId, email: myself.data.emailAddress, name: myself.data.displayName } : myself,
+      issueDirect: issue.ok
+        ? { key: issue.data.key, status: issue.data.fields?.status?.name,
+            assigneeId: issue.data.fields?.assignee?.accountId, assigneeEmail: issue.data.fields?.assignee?.emailAddress }
+        : issue,
+      byKey_jql: await probe(`key = ${key}`),
+      byAssigneeId_jql: issue.ok && issue.data.fields?.assignee?.accountId
+        ? await probe(`assignee = "${issue.data.fields.assignee.accountId}"`)
+        : 'no-assignee',
     }};
     return;
   }
