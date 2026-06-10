@@ -58,20 +58,24 @@ module.exports = async function (context, req) {
   const accountId = await resolveAccountId(baseUrl, auth, queryUser, childHeaders(trace), log);
   const assignee  = (accountId || queryUser).replace(/(["\\])/g, '\\$1');
 
-  // TEMP diagnostic: compare querying by accountId vs by email.
+  // TEMP diagnostic: dump user-search + compare query forms.
   if (req.query.debug) {
-    const probe = async (clause) => {
-      const u = `${baseUrl}/rest/api/3/search/jql?jql=${encodeURIComponent(clause)}&fields=summary&maxResults=5`;
-      try {
-        const d = await requestJson(u, { method: 'GET', headers, traceHeaders: childHeaders(trace) });
-        return { count: (d.issues || []).length, total: d.total ?? null, keys: (d.issues || []).map(i => i.key), errs: d.errorMessages || null };
-      } catch (e) { return { error: e.statusCode || e.message, snippet: e.snippet }; }
+    const get = async (u) => {
+      try { return { ok: true, data: await requestJson(u, { method: 'GET', headers, traceHeaders: childHeaders(trace) }) }; }
+      catch (e) { return { ok: false, status: e.statusCode || null, msg: e.message, snippet: e.snippet }; }
     };
+    const probe = async (clause) => {
+      const r = await get(`${baseUrl}/rest/api/3/search/jql?jql=${encodeURIComponent(clause)}&fields=summary&maxResults=5`);
+      return r.ok ? { count: (r.data.issues || []).length, total: r.data.total ?? null, keys: (r.data.issues || []).map(i => i.key) } : r;
+    };
+    const userSearch = await get(`${baseUrl}/rest/api/3/user/search?query=${encodeURIComponent(queryUser)}`);
+    const assignableSearch = await get(`${baseUrl}/rest/api/3/user/assignable/search?query=${encodeURIComponent(queryUser)}&project=QT`);
     context.res = { status: 200, headers: { 'Content-Type': 'application/json', ...traceHeader }, body: {
-      queryUser, resolvedAccountId: accountId,
-      byAccountId: accountId ? await probe(`assignee = "${accountId}" AND statusCategory != Done`) : 'no-accountId',
-      byEmail:     await probe(`assignee = "${queryUser}" AND statusCategory != Done`),
-      byAccountIdUnquoted: accountId ? await probe(`assignee = ${accountId} AND statusCategory != Done`) : 'no-accountId',
+      queryUser,
+      userSearch: userSearch.ok ? userSearch.data.map(u => ({ accountId: u.accountId, email: u.emailAddress, name: u.displayName, active: u.active })) : userSearch,
+      assignableSearch: assignableSearch.ok ? assignableSearch.data.map(u => ({ accountId: u.accountId, email: u.emailAddress, name: u.displayName })) : assignableSearch,
+      byEmail:    await probe(`assignee = "${queryUser}" AND statusCategory != Done`),
+      byCurrentUserNote: 'n/a',
     }};
     return;
   }
