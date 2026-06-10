@@ -29,7 +29,7 @@ module.exports = async function (context, req) {
     context.res = {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...traceHeader },
-      body: { issues: [], total: 0, doneToday: 0, queryUser: '', authEmail, error: null },
+      body: { issues: [], total: 0, doneToday: 0, queryUser: '', error: null },
     };
     return;
   }
@@ -53,38 +53,24 @@ module.exports = async function (context, req) {
   const headers = { Authorization: `Basic ${auth}`, Accept: 'application/json' };
   const fields  = 'summary,priority,status,duedate,issuetype,assignee';
 
+  // Verify the integration credentials up front. Jira serves *anonymous* (empty)
+  // results to a bad/expired token instead of 401-ing the search, so without this
+  // an invalid token looks like "no tickets". /myself fails closed on bad creds.
+  try {
+    await requestJson(`${baseUrl}/rest/api/3/myself`, { method: 'GET', headers, traceHeaders: childHeaders(trace) });
+  } catch (err) {
+    if (err.statusCode === 401 || err.statusCode === 403) {
+      log.error('Jira credentials rejected', { statusCode: err.statusCode });
+      problem(context, { status: 502, type: 'server', code: 'JIRA_AUTH_FAILED', message: 'Jira integration credentials are invalid or expired.', headers: traceHeader });
+      return;
+    }
+    // other failures fall through to the main query, which surfaces them
+  }
+
   // Jira Cloud no longer matches assignee by email (GDPR), so resolve the email
   // to the user's accountId first; fall back to the raw value if lookup fails.
   const accountId = await resolveAccountId(baseUrl, auth, queryUser, childHeaders(trace), log);
   const assignee  = (accountId || queryUser).replace(/(["\\])/g, '\\$1');
-
-  // TEMP diagnostic: dump user-search + compare query forms.
-  if (req.query.debug) {
-    const get = async (u) => {
-      try { return { ok: true, data: await requestJson(u, { method: 'GET', headers, traceHeaders: childHeaders(trace) }) }; }
-      catch (e) { return { ok: false, status: e.statusCode || null, msg: e.message, snippet: e.snippet }; }
-    };
-    const probe = async (clause) => {
-      const r = await get(`${baseUrl}/rest/api/3/search/jql?jql=${encodeURIComponent(clause)}&fields=summary&maxResults=5`);
-      return r.ok ? { count: (r.data.issues || []).length, total: r.data.total ?? null, keys: (r.data.issues || []).map(i => i.key) } : r;
-    };
-    const key = req.query.key || 'QT-3243';
-    const myself = await get(`${baseUrl}/rest/api/3/myself`);
-    const issue  = await get(`${baseUrl}/rest/api/3/issue/${encodeURIComponent(key)}?fields=summary,assignee,status`);
-    context.res = { status: 200, headers: { 'Content-Type': 'application/json', ...traceHeader }, body: {
-      queryUser,
-      myself: myself.ok ? { accountId: myself.data.accountId, email: myself.data.emailAddress, name: myself.data.displayName } : myself,
-      issueDirect: issue.ok
-        ? { key: issue.data.key, status: issue.data.fields?.status?.name,
-            assigneeId: issue.data.fields?.assignee?.accountId, assigneeEmail: issue.data.fields?.assignee?.emailAddress }
-        : issue,
-      byKey_jql: await probe(`key = ${key}`),
-      byAssigneeId_jql: issue.ok && issue.data.fields?.assignee?.accountId
-        ? await probe(`assignee = "${issue.data.fields.assignee.accountId}"`)
-        : 'no-assignee',
-    }};
-    return;
-  }
 
   // Active tickets (To Do, In Progress, In Review, … — anything not Done) plus a
   // count of tickets the user completed today, for the "Done Today" stat.
@@ -112,7 +98,6 @@ module.exports = async function (context, req) {
         total:     openData.total  || 0,
         doneToday,
         queryUser,
-        authEmail,
         error:     null,
       },
     };
